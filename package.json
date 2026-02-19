@@ -1,14 +1,15 @@
 {
   "name": "backend-proyecto-arqui",
   "version": "1.0.0",
-  "main": "index.js",
+  "type": "module",
+  "description": "Backend Sistema de Inscripción de Cursos",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
@@ -17,7 +18,6 @@
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.18.0"
   },
-  "description": "",
   "devDependencies": {
     "nodemon": "^3.1.11"
   }

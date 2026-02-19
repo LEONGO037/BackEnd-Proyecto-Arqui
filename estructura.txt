@@ -4,6 +4,7 @@
 |-- package-lock.json
 |-- package.json
 `-- src
+    |-- app.js
     |-- config
     |   `-- db.js
     |-- controllers
@@ -15,4 +16,4 @@
     `-- routes
         `-- example.route.js
 
-6 directories, 9 files
+6 directories, 10 files
