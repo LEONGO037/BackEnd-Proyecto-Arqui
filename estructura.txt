@@ -1,0 +1,18 @@
+.
+|-- estructura.txt
+|-- index.js
+|-- package-lock.json
+|-- package.json
+`-- src
+    |-- config
+    |   `-- db.js
+    |-- controllers
+    |   `-- example.comtroller.js
+    |-- middleware
+    |   `-- middelware.js
+    |-- model
+    |   `-- example.model.js
+    `-- routes
+        `-- example.route.js
+
+6 directories, 9 files
