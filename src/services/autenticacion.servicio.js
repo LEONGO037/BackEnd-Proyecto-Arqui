@@ -7,29 +7,17 @@ import { obtenerUsuarioPorEmailConRol,
  } from "../models/usuario.modelo.js";
 
 export const iniciarSesion = async (email, password) => {
-
   if (!email || !password) {
     throw new Error("Correo y contraseña son obligatorios");
   }
-
   const usuario = await obtenerUsuarioPorEmailConRol(email);
-
-  if (!usuario) {
-    throw new Error("Credenciales incorrectas");
-  }
+  if (!usuario) throw new Error("Credenciales incorrectas");
 
   const passwordValido = await bcrypt.compare(password, usuario.password_hash);
-
-  if (!passwordValido) {
-    throw new Error("Credenciales incorrectas");
-  }
+  if (!passwordValido) throw new Error("Credenciales incorrectas");
 
   const token = jwt.sign(
-    {
-      id: usuario.id,
-      email: usuario.email,
-      rol: usuario.rol_nombre
-    },
+    { id: usuario.id, email: usuario.email, rol: usuario.rol_nombre },
     process.env.JWT_SECRET,
     { expiresIn: "4h" }
   );
@@ -46,9 +34,7 @@ export const iniciarSesion = async (email, password) => {
   };
 };
 
-
 export const registrarEstudiante = async (datos) => {
-
   const {
     nombre,
     apellido_paterno,
@@ -60,7 +46,8 @@ export const registrarEstudiante = async (datos) => {
     password
   } = datos;
 
-  if (!nombre || !apellido_paterno || !ci_nit || !email || !password) {
+  // ci_nit ya NO es obligatorio — el usuario puede registrarse sin él
+  if (!nombre || !apellido_paterno || !email || !password) {
     throw new Error("Los campos obligatorios no fueron enviados");
   }
 
@@ -79,10 +66,10 @@ export const registrarEstudiante = async (datos) => {
   const nuevoUsuario = await crearUsuario({
     nombre,
     apellido_paterno,
-    apellido_materno,
-    ci_nit,
-    telefono,
-    direccion,
+    apellido_materno: apellido_materno || '',
+    ci_nit: ci_nit || null,
+    telefono: telefono || null,
+    direccion: direccion || null,
     email,
     password_hash: passwordEncriptado,
     rol_id: rol.id
