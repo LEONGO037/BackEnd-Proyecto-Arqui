@@ -21,44 +21,139 @@ export const obtenerCursosDeEstudiante = async (estudianteId) => {
 };
 
 export const inscribirEstudianteEnCurso = async (estudianteId, cursoId) => {
+
   // Verificar duplicado
   const { rows: existe } = await pool.query(
-    `SELECT id FROM estudiante_curso WHERE estudiante_id = $1 AND curso_id = $2`,
+    `SELECT id FROM estudiante_curso 
+     WHERE estudiante_id = $1 AND curso_id = $2`,
     [estudianteId, cursoId]
   );
-  if (existe.length > 0) throw new Error("Ya estás inscrito en este curso");
+  if (existe.length > 0) 
+    throw new Error("Ya estás inscrito en este curso");
 
   // Obtener costo
   const { rows: cursoRows } = await pool.query(
-    `SELECT costo FROM cursos WHERE id = $1 AND activo = true`,
+    `SELECT costo FROM cursos 
+     WHERE id = $1 AND activo = true`,
     [cursoId]
   );
-  if (cursoRows.length === 0) throw new Error("Curso no encontrado o inactivo");
+  if (cursoRows.length === 0) 
+    throw new Error("Curso no encontrado o inactivo");
 
-  // Crear inscripcion padre
+  const costo = cursoRows[0].costo;
+
+  // Crear inscripción individual
   const { rows: inscRows } = await pool.query(
-    `INSERT INTO inscripciones (estudiante_id, estado, total) VALUES ($1, 'activo', $2) RETURNING id`,
-    [estudianteId, cursoRows[0].costo]
+    `INSERT INTO inscripciones (estudiante_id, estado, total)
+     VALUES ($1, 'activo', $2)
+     RETURNING id`,
+    [estudianteId, costo]
   );
 
-  // Crear detalle
+  const inscripcionId = inscRows[0].id;
+
+  // Crear estudiante_curso
   const { rows: ecRows } = await pool.query(
-    `INSERT INTO estudiante_curso (estudiante_id, curso_id, inscripcion_id, estado_academico, asistencia_porcentaje)
-     VALUES ($1, $2, $3, 'cursando', 0) RETURNING *`,
-    [estudianteId, cursoId, inscRows[0].id]
+    `INSERT INTO estudiante_curso 
+     (estudiante_id, curso_id, inscripcion_id, estado_academico, asistencia_porcentaje)
+     VALUES ($1, $2, $3, 'cursando', 0)
+     RETURNING *`,
+    [estudianteId, cursoId, inscripcionId]
   );
+
   return ecRows[0];
 };
 
+
+/**
+ * Inscribir estudiante en múltiples cursos
+ * Cada curso tendrá su propia inscripción independiente
+ */
+export const inscribirEstudianteEnCursos = async (estudianteId, cursoIds) => {
+
+  const inscripciones = [];
+  const errores = [];
+
+  for (const cursoId of cursoIds) {
+
+    try {
+
+      // Verificar duplicado
+      const { rows: existe } = await pool.query(
+        `SELECT id FROM estudiante_curso 
+         WHERE estudiante_id = $1 AND curso_id = $2`,
+        [estudianteId, cursoId]
+      );
+
+      if (existe.length > 0) {
+        errores.push({ cursoId, error: "Ya estás inscrito en este curso" });
+        continue;
+      }
+
+      // Obtener costo
+      const { rows: cursoRows } = await pool.query(
+        `SELECT costo FROM cursos 
+         WHERE id = $1 AND activo = true`,
+        [cursoId]
+      );
+
+      if (cursoRows.length === 0) {
+        errores.push({ cursoId, error: "Curso no encontrado o inactivo" });
+        continue;
+      }
+
+      const costo = cursoRows[0].costo;
+
+      // Crear inscripción INDIVIDUAL
+      const { rows: inscRows } = await pool.query(
+        `INSERT INTO inscripciones (estudiante_id, estado, total)
+         VALUES ($1, 'activo', $2)
+         RETURNING id`,
+        [estudianteId, costo]
+      );
+
+      const inscripcionId = inscRows[0].id;
+
+      // Crear estudiante_curso
+      const { rows: ecRows } = await pool.query(
+        `INSERT INTO estudiante_curso 
+         (estudiante_id, curso_id, inscripcion_id, estado_academico, asistencia_porcentaje)
+         VALUES ($1, $2, $3, 'cursando', 0)
+         RETURNING *`,
+        [estudianteId, cursoId, inscripcionId]
+      );
+
+      inscripciones.push(ecRows[0]);
+
+    } catch (err) {
+      errores.push({ cursoId, error: err.message });
+    }
+  }
+
+  return { inscripciones, errores };
+};
+
+
 export const desinscribirEstudianteDeCurso = async (estudianteId, cursoId) => {
+
   const { rows } = await pool.query(
-    `DELETE FROM estudiante_curso WHERE estudiante_id = $1 AND curso_id = $2 RETURNING inscripcion_id`,
+    `DELETE FROM estudiante_curso 
+     WHERE estudiante_id = $1 AND curso_id = $2 
+     RETURNING inscripcion_id`,
     [estudianteId, cursoId]
   );
-  if (rows.length === 0) throw new Error("No existe esa inscripción");
 
-  if (rows[0].inscripcion_id) {
-    await pool.query(`DELETE FROM inscripciones WHERE id = $1`, [rows[0].inscripcion_id]);
+  if (rows.length === 0) 
+    throw new Error("No existe esa inscripción");
+
+  const inscripcionId = rows[0].inscripcion_id;
+
+  if (inscripcionId) {
+    await pool.query(
+      `DELETE FROM inscripciones WHERE id = $1`,
+      [inscripcionId]
+    );
   }
+
   return { eliminado: true };
 };
