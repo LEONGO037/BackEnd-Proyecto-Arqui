@@ -4,7 +4,9 @@ export const verificarRol = (rolPermitido) => {
 
     if (req.usuario.rol !== rolPermitido) {
       return res.status(403).json({
-        error: "No tiene permisos para acceder a esta ruta"
+        error: "No tiene permisos para acceder a esta ruta",
+        rolRequerido: rolPermitido,
+        tuRol: req.usuario.rol
       });
     }
 
