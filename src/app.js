@@ -9,11 +9,8 @@ import rutasPagos         from "./routes/pagos/pagos.routes.js";
 import rutasTareas        from "./routes/tareas/tareas.routes.js";
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
-app.use("/api/autenticacion", rutasAutenticacion);
-app.use("/api/admin", rutasAdmin);
 
 app.use("/api/autenticacion",  rutasAutenticacion);
 app.use("/api/admin",          rutasAdmin);
@@ -23,8 +20,6 @@ app.use("/api/cursos",         rutasCursos);
 app.use("/api/pagos",          rutasPagos);
 app.use("/api/tareas",         rutasTareas);
 
-app.get("/", (req, res) => {
-  res.json({ message: "API funcionando correctamente " });
-});
+app.get("/", (req, res) => res.json({ message: "API funcionando correctamente" }));
 
 export default app;
