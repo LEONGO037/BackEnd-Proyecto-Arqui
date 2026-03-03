@@ -5,7 +5,10 @@ import {
   verMisCursos,
   actualizarEstado
 } from "../../controllers/docente/curso.js";
-
+import {
+    cantidadCursosActivos,cantidadEstudiantesActivos
+} from "../../controllers/docente/curso.estudiante.js";
+import { verEstudiantesCurso, registrarNota } from "../../controllers/docente/estudiante.js";
 const router = express.Router();
 
 router.get(
@@ -22,4 +25,31 @@ router.put(
   actualizarEstado
 );
 
+router.get(
+  "/cursos-activos/cantidad",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  cantidadCursosActivos
+);
+
+router.get(
+  "/estudiantes-activos/cantidad",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  cantidadEstudiantesActivos
+);
+
+router.get(
+  "/curso/:curso_id/estudiantes",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  verEstudiantesCurso
+);
+
+router.post(
+  "/curso/:curso_id/estudiante/:estudiante_id/nota",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  registrarNota
+);
 export default router;
