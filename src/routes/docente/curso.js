@@ -55,4 +55,11 @@ router.post(
   verificarRol("DOCENTE"),
   registrarNota
 );
+
+router.get(
+  "/curso/:curso_id/metricas",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  obtenerMetricasCurso
+);
 export default router;
