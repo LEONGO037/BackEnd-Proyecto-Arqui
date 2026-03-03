@@ -8,7 +8,10 @@ import {
   actualizarNotas,
   obtenerMetricasCurso
 } from "../../controllers/docente/curso.js";
-
+import {
+    cantidadCursosActivos,cantidadEstudiantesActivos
+} from "../../controllers/docente/curso.estudiante.js";
+import { verEstudiantesCurso, registrarNota } from "../../controllers/docente/estudiante.js";
 const router = express.Router();
 
 router.get(
@@ -26,24 +29,30 @@ router.put(
 );
 
 router.get(
-  "/:curso_id/estudiantes",
+  "/cursos-activos/cantidad",
   verificarToken,
   verificarRol("DOCENTE"),
-  obtenerAlumnosCurso
-);
-
-router.put(
-  "/:curso_id/notas",
-  verificarToken,
-  verificarRol("DOCENTE"),
-  actualizarNotas
+  cantidadCursosActivos
 );
 
 router.get(
-  "/:curso_id/metricas",
+  "/estudiantes-activos/cantidad",
   verificarToken,
   verificarRol("DOCENTE"),
-  obtenerMetricasCurso
+  cantidadEstudiantesActivos
 );
 
+router.get(
+  "/curso/:curso_id/estudiantes",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  verEstudiantesCurso
+);
+
+router.post(
+  "/curso/:curso_id/estudiante/:estudiante_id/nota",
+  verificarToken,
+  verificarRol("DOCENTE"),
+  registrarNota
+);
 export default router;

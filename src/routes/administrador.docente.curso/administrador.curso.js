@@ -3,7 +3,8 @@ import express from "express";
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
 import { verificarRol } from "../../middlewares/roles.middleware.js";
 import { 
-  crearDocenteAdmin, 
+  crearDocenteAdmin,
+  verDocentes 
 } from "../../controllers/administrador.docente/docente.controller.js";
 import { asignarCursoAdmin } from "../../controllers/administrador.docente/docente.curso.js";
 const router = express.Router();
@@ -20,6 +21,12 @@ router.post(
   verificarToken,
   verificarRol("ADMINISTRADOR"),
   asignarCursoAdmin
+);
+router.get(
+  "/docentes",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  verDocentes
 );
 
 

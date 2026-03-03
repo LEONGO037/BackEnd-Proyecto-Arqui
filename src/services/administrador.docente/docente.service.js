@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { obtenerRolDocente, crearDocente } from "../../models/administrador.docente/docente.modelo.js";
+import { obtenerRolDocente, crearDocente,obtenerDocentes } from "../../models/administrador.docente/docente.modelo.js";
 
 export const registrarDocente = async (datos) => {
 
@@ -16,4 +16,7 @@ export const registrarDocente = async (datos) => {
     password_hash: passwordEncriptado,
     rol_id: rol.id
   });
+};
+export const listarDocentes = async () => {
+  return await obtenerDocentes();
 };

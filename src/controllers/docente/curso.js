@@ -24,12 +24,12 @@ export const actualizarEstado = async (req, res) => {
   try {
 
     const usuario_id = req.usuario.id;
-    const { curso_id, estado_curso } = req.body;
+    const { curso_id, estado } = req.body;
 
     const resultado = await cambiarEstadoCurso(
       usuario_id,
       curso_id,
-      estado_curso
+      estado
     );
 
     res.json({
