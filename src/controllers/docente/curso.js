@@ -1,6 +1,9 @@
 import {
   listarCursosDocente,
-  cambiarEstadoCurso
+  cambiarEstadoCurso,
+  obtenerEstudiantes,
+  guardarNotas,
+  obtenerMetricas
 } from "../../services/docente/curso.js";
 
 export const verMisCursos = async (req, res) => {
@@ -33,6 +36,55 @@ export const actualizarEstado = async (req, res) => {
       mensaje: "Estado actualizado correctamente",
       resultado
     });
+
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const obtenerAlumnosCurso = async (req, res) => {
+  try {
+
+    const usuario_id = req.usuario.id;
+    const { curso_id } = req.params;
+
+    const estudiantes = await obtenerEstudiantes(usuario_id, parseInt(curso_id));
+
+    res.json(estudiantes);
+
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const actualizarNotas = async (req, res) => {
+  try {
+
+    const usuario_id = req.usuario.id;
+    const { curso_id } = req.params;
+    const { notas } = req.body; // Array de { estudiante_curso_id, nota_final }
+
+    const resultado = await guardarNotas(usuario_id, parseInt(curso_id), notas);
+
+    res.json({
+      mensaje: "Calificaciones guardadas correctamente",
+      resultado
+    });
+
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const obtenerMetricasCurso = async (req, res) => {
+  try {
+
+    const usuario_id = req.usuario.id;
+    const { curso_id } = req.params;
+
+    const metricas = await obtenerMetricas(usuario_id, parseInt(curso_id));
+
+    res.json(metricas);
 
   } catch (error) {
     res.status(400).json({ error: error.message });

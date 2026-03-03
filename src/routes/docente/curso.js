@@ -3,7 +3,10 @@ import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
 import { verificarRol } from "../../middlewares/roles.middleware.js";
 import {
   verMisCursos,
-  actualizarEstado
+  actualizarEstado,
+  obtenerAlumnosCurso,
+  actualizarNotas,
+  obtenerMetricasCurso
 } from "../../controllers/docente/curso.js";
 import {
     cantidadCursosActivos,cantidadEstudiantesActivos

@@ -6,6 +6,8 @@ import rutasEstudiante    from "./routes/estudiante/estudiante.routes.js";
 import rutasInscripciones from "./routes/inscripcion/inscripcion.routes.js";
 import rutasCursos        from "./routes/cursos/cursos.routes.js";
 import rutasPagos         from "./routes/pagos/pagos.routes.js";
+import rutasTareas        from "./routes/tareas/tareas.routes.js";
+
 import rutasdocentecurso from "./routes/administrador.docente.curso/administrador.curso.js";
 import rutasDocente from "./routes/docente/curso.js";
 const app = express();
@@ -18,6 +20,8 @@ app.use("/api/estudiante",     rutasEstudiante);
 app.use("/api/inscripciones",  rutasInscripciones);
 app.use("/api/cursos",         rutasCursos);
 app.use("/api/pagos",          rutasPagos);
+app.use("/api/tareas",         rutasTareas);
+
 app.use("/api/admin-docente-curso",   rutasdocentecurso);
 app.use("/api/docente", rutasDocente);
 app.get("/", (req, res) => res.json({ message: "API funcionando correctamente" }));
