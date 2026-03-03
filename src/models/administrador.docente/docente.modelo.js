@@ -40,3 +40,24 @@ export const crearDocente = async (datos) => {
 
   return resultado.rows[0];
 };
+
+export const obtenerDocentes = async () => {
+
+  const resultado = await pool.query(
+    `SELECT 
+        u.id,
+        u.nombre,
+        u.apellido_paterno,
+        u.apellido_materno,
+        u.ci_nit,
+        u.email,
+        u.telefono,
+        u.direccion
+     FROM usuarios u
+     JOIN roles r ON r.id = u.rol_id
+     WHERE r.nombre = 'DOCENTE'
+     ORDER BY u.id DESC`
+  );
+
+  return resultado.rows;
+};
