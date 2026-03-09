@@ -51,7 +51,7 @@ export const postCrearOrden = async (req, res) => {
 
 export const postCapturarOrden = async (req, res) => {
   try {
-    const { orderID, curso_ids, curso_id, nit, razon_social } = req.body;
+    const { orderID, curso_ids, curso_id } = req.body;
 
     const ids = curso_ids || [curso_id];
 
@@ -91,19 +91,16 @@ export const postCapturarOrden = async (req, res) => {
     const detallesPago = [];
 
     for (const insc of resultadoInscripcion.inscripciones) {
-
       const cursosData = await PagosModel.obtenerCursosPorIds([insc.curso_id]);
 
       if (cursosData.length > 0) {
-        const pagoFactura = await PagosModel.crearPagoYFactura({
-          inscripcionId: insc.id || insc.inscripcion_id,
+        const pago = await PagosModel.registrarPago({
+          inscripcionId: insc.inscripcion_id,
           monto: cursosData[0].costo,
-          referencia: captura.id,
-          nit: nit || req.usuario.ci_nit || 'S/N',
-          razonSocial: razon_social || `${req.usuario.nombre} ${req.usuario.apellido_paterno}`
+          referencia: captura.id
         });
 
-        detallesPago.push(pagoFactura);
+        detallesPago.push(pago);
       }
     }
 
@@ -113,7 +110,7 @@ export const postCapturarOrden = async (req, res) => {
         : `¡Pago exitoso! Ya estás inscrito en ${resultadoInscripcion.inscripciones.length} cursos.`,
       transaccion: captura.id,
       inscripciones: resultadoInscripcion.inscripciones,
-      pago_factura: detallesPago,
+      pagos: detallesPago,
       errores: resultadoInscripcion.errores.length > 0 ? resultadoInscripcion.errores : undefined,
     });
 
