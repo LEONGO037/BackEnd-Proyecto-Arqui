@@ -23,7 +23,7 @@ export const enviarFacturaPorCorreo = async (destinatario, pdfBuffer, datosPago)
     from: `"Taller de Grado UCB" <${process.env.EMAIL_USER}>`,
     to: destinatario,
     subject: `Factura de pago - Inscripción a cursos`,
-    text: `Hola ${datosPago.cliente.nombre},\n\nAdjuntamos la factura correspondiente a tu pago por los siguientes cursos:\n${cursosLista}\n\nMonto total: ${datosPago.totalBs} Bs.\n\nGracias por tu inscripción.\n\nSaludos,\nTaller de Grado UCB`,
+    text: `Hola ${datosPago.cliente.nombre},\n\nAdjuntamos la factura correspondiente a tu pago por los siguientes cursos:\n${cursosLista}\n\nMonto total: ${datosPago.totalBs} Bs.\n\nGracias por tu inscripción.\n\nSaludos,\nTX College Nexus`,
     attachments: [
       {
         filename: `factura_${Date.now()}.pdf`,
