@@ -157,3 +157,43 @@ export const desinscribirEstudianteDeCurso = async (estudianteId, cursoId) => {
 
   return { eliminado: true };
 };
+
+// -----------------------------------------------------------------------------
+// ADMIN / REPORTES
+// -----------------------------------------------------------------------------
+
+/**
+ * Devuelve un listado de cursos con los estudiantes inscritos en cada uno.
+ * La estructura coincide con la que consume la vista de gestión de inscripciones
+ * en el frontend (ver MOCK_CURSOS en el componente React).
+ */
+export const obtenerResumenCursosConInscritos = async () => {
+  const { rows } = await pool.query(
+    `SELECT
+       c.id,
+       c.nombre,
+       c.costo,
+       c.cupo_maximo,
+       c.minimo_estudiantes,
+       COALESCE(
+         json_agg(
+           json_build_object(
+             'id_relacion', ec.id,
+             'nombre', u.nombre,
+             'apellido', u.apellido_paterno || ' ' || COALESCE(u.apellido_materno, ''),
+             'ci_nit', u.ci_nit,
+             'estado_academico', ec.estado_academico,
+             'fecha_registro', ec.fecha_registro
+           ) ORDER BY ec.fecha_registro
+         ) FILTER (WHERE ec.id IS NOT NULL),
+         '[]'
+       ) AS inscritos
+     FROM cursos c
+     LEFT JOIN estudiante_curso ec ON ec.curso_id = c.id
+     LEFT JOIN usuarios u ON u.id = ec.estudiante_id
+     WHERE c.activo = true
+     GROUP BY c.id
+     ORDER BY c.id;`
+  );
+  return rows;
+};
