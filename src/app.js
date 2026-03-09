@@ -10,6 +10,8 @@ import rutasTareas        from "./routes/tareas/tareas.routes.js";
 
 import rutasdocentecurso from "./routes/administrador.docente.curso/administrador.curso.js";
 import rutasDocente from "./routes/docente/curso.js";
+
+import rutasFactura from './routes/pagos/factura.routes.js';
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -24,6 +26,9 @@ app.use("/api/tareas",         rutasTareas);
 
 app.use("/api/admin-docente-curso",   rutasdocentecurso);
 app.use("/api/docente", rutasDocente);
+
+app.use('/api/facturas', rutasFactura);
+
 app.get("/", (req, res) => res.json({ message: "API funcionando correctamente" }));
 
 export default app;

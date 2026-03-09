@@ -11,25 +11,21 @@ export const postCrearOrden = async (req, res) => {
   try {
     const { curso_ids, curso_id } = req.body;
 
-    // Soportar tanto array (nuevo) como single ID (retrocompatibilidad)
     const ids = curso_ids || [curso_id];
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({ error: 'curso_ids o curso_id es requerido' });
     }
 
-    // Obtener datos de los cursos desde el modelo
     const rows = await PagosModel.obtenerCursosPorIds(ids);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: 'No se encontraron cursos' });
     }
 
-    // Calcular total
     const totalCosto = rows.reduce((sum, curso) => sum + Number(curso.costo), 0);
     const montoUSD = (totalCosto / 7).toFixed(2);
 
-    // Descripción según cantidad de cursos
     const descripcion = rows.length === 1
       ? `Inscripción: ${rows[0].nombre}`
       : `Inscripción a ${rows.length} cursos`;
@@ -37,7 +33,7 @@ export const postCrearOrden = async (req, res) => {
     const orden = await crearOrden(
       Number(montoUSD),
       descripcion,
-      ids.join(',') // Guardar IDs como string para referencia
+      ids.join(',')
     );
 
     res.json({
@@ -46,6 +42,7 @@ export const postCrearOrden = async (req, res) => {
       cursos: rows.map(r => r.nombre),
       cantidad: rows.length
     });
+
   } catch (err) {
     console.error('Error crear-orden:', err.message);
     res.status(500).json({ error: err.message });
@@ -56,7 +53,6 @@ export const postCapturarOrden = async (req, res) => {
   try {
     const { orderID, curso_ids, curso_id, nit, razon_social } = req.body;
 
-    // Soportar tanto array (nuevo) como single ID (retrocompatibilidad)
     const ids = curso_ids || [curso_id];
 
     if (!orderID || !ids || !Array.isArray(ids) || ids.length === 0) {
@@ -76,8 +72,8 @@ export const postCapturarOrden = async (req, res) => {
 
     const estudianteId = req.usuario.id;
 
-    // 1. Ejecutar inscripción (desde el modelo de inscripciones)
     let resultadoInscripcion;
+
     if (ids.length === 1) {
       const inscripcion = await inscribirEstudianteEnCurso(estudianteId, Number(ids[0]));
       resultadoInscripcion = {
@@ -92,23 +88,21 @@ export const postCapturarOrden = async (req, res) => {
       );
     }
 
-    // 2. Por cada inscripción exitosa, registrar Pago y Factura (desde el modelo de pagos)
     const detallesPago = [];
-    for (const insc of resultadoInscripcion.inscripciones) {
-      // Necesitamos el costo del curso para el pago, podemos obtenerlo de la inscripción o del curso
-      // En este caso, buscaremos el costo del curso de nuevo o lo pasamos si lo tenemos.
-      // Pero mejor, el modelo de pagos puede encargarse si le pasamos la info necesaria.
 
-      // Obtener costo del curso de nuevo (mantenemos el aislamiento de modelos)
+    for (const insc of resultadoInscripcion.inscripciones) {
+
       const cursosData = await PagosModel.obtenerCursosPorIds([insc.curso_id]);
+
       if (cursosData.length > 0) {
         const pagoFactura = await PagosModel.crearPagoYFactura({
-          inscripcionId: insc.id || insc.inscripcion_id, // Depende de lo que retorne el modelo de inscripción
+          inscripcionId: insc.id || insc.inscripcion_id,
           monto: cursosData[0].costo,
           referencia: captura.id,
           nit: nit || req.usuario.ci_nit || 'S/N',
           razonSocial: razon_social || `${req.usuario.nombre} ${req.usuario.apellido_paterno}`
         });
+
         detallesPago.push(pagoFactura);
       }
     }
@@ -136,6 +130,7 @@ export const getTodosLosPagos = async (req, res) => {
 
     const pagos = await PagosModel.obtenerTodosLosPagos(limit, offset);
     res.json(pagos);
+
   } catch (err) {
     console.error('Error obtener-todos-los-pagos:', err.message);
     res.status(500).json({ error: err.message });
@@ -147,6 +142,7 @@ export const getPagosUsuario = async (req, res) => {
     const estudianteId = req.usuario.id;
     const pagos = await PagosModel.obtenerPagosPorUsuario(estudianteId);
     res.json(pagos);
+
   } catch (err) {
     console.error('Error obtener-pagos-usuario:', err.message);
     res.status(500).json({ error: err.message });
