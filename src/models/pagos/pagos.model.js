@@ -13,51 +13,22 @@ export const obtenerCursosPorIds = async (ids) => {
 };
 
 /**
- * Registra un pago y su respectiva factura en una sola transacción.
+ * Registra un pago en la base de datos.
  * El metodo_pago_id para PayPal es 1.
  */
-export const crearPagoYFactura = async ({
+export const registrarPago = async ({
     inscripcionId,
     monto,
-    referencia,
-    nit,
-    razonSocial
+    referencia
 }) => {
-    const client = await pool.connect();
-    try {
-        await client.query("BEGIN");
-
-        // 1. Registrar el Pago (metodo_pago_id = 1 para PayPal)
-        const { rows: pagoRows } = await client.query(
-            `INSERT INTO pagos 
-       (inscripcion_id, metodo_pago_id, monto, estado, referencia, fecha_pago)
-       VALUES ($1, 1, $2, 'COMPLETADO', $3, CURRENT_TIMESTAMP)
-       RETURNING id`,
-            [inscripcionId, monto, referencia]
-        );
-        const pagoId = pagoRows[0].id;
-
-        // 2. Generar Factura
-        const codigoFactura = `FAC-${Date.now()}-${pagoId}`;
-        const { rows: factRows } = await client.query(
-            `INSERT INTO facturas 
-       (pago_id, codigo_factura, nit, razon_social, fecha_emision)
-       VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-       RETURNING *`,
-            [pagoId, codigoFactura, nit, razonSocial]
-        );
-
-        await client.query("COMMIT");
-        return {
-            pago_id: pagoId,
-            factura: factRows[0]
-        };
-    } catch (error) {
-        await client.query("ROLLBACK");
-        throw error;
-    } finally {
-        client.release();
-    }
+    const { rows } = await pool.query(
+        `INSERT INTO pagos 
+     (inscripcion_id, metodo_pago_id, monto, estado, referencia, fecha_pago)
+     VALUES ($1, 1, $2, 'COMPLETADO', $3, CURRENT_TIMESTAMP)
+     RETURNING id`,
+        [inscripcionId, monto, referencia]
+    );
+    return rows[0];
 };
 
 /**

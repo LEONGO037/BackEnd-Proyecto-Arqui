@@ -8,7 +8,7 @@ const router = express.Router();
 router.get('/config', getConfig);                          // público — devuelve clientId
 router.post('/crear-orden', verificarToken, postCrearOrden);
 router.post('/capturar-orden', verificarToken, postCapturarOrden);
-router.get('/', verificarToken, getTodosLosPagos);             // Admin (validación de rol en front según solicitud)
+router.get('/', verificarToken, getTodosLosPagos);             // Admin
 router.get('/usuario', verificarToken, getPagosUsuario);       // Estudiante
 
 export default router;
