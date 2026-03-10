@@ -24,7 +24,6 @@ export const CursosModel = {
 
             const { nombre, descripcion, costo, cupo_maximo, minimo_estudiantes, prerrequisitos = [] } = datos;
 
-            // 1. Insertar el curso
             const queryCurso = `
                 INSERT INTO public.cursos (nombre, descripcion, costo, cupo_maximo, minimo_estudiantes)
                 VALUES ($1, $2, $3, $4, $5)
@@ -35,7 +34,6 @@ export const CursosModel = {
             const { rows: rowsCurso } = await client.query(queryCurso, valuesCurso);
             const cursoCreado = rowsCurso[0];
 
-            // 2. Insertar prerrequisitos si existen
             if (prerrequisitos && prerrequisitos.length > 0) {
                 const queryPrerrequisito = `
                     INSERT INTO public.curso_prerrequisitos (curso_id, curso_prerrequisito_id)
@@ -94,17 +92,18 @@ export const CursosModel = {
      */
     validarPrerrequisitos: async (estudiante_id, curso_id) => {
 
-        // obtener prerrequisitos del curso
         const prerreq = await pool.query(
-            `SELECT curso_prerrequisito_id
-             FROM public.curso_prerrequisitos
-             WHERE curso_id = $1`,
+            `SELECT cp.curso_prerrequisito_id, c.nombre
+             FROM public.curso_prerrequisitos cp
+             JOIN public.cursos c
+               ON c.id = cp.curso_prerrequisito_id
+             WHERE cp.curso_id = $1`,
             [curso_id]
         );
 
-        // si no tiene prerrequisitos, puede inscribirse
+        // si no tiene prerrequisitos
         if (prerreq.rows.length === 0) {
-            return true;
+            return { permitido: true };
         }
 
         for (const pr of prerreq.rows) {
@@ -119,10 +118,13 @@ export const CursosModel = {
             );
 
             if (aprobado.rows.length === 0) {
-                return false;
+                return {
+                    permitido: false,
+                    curso_faltante: pr.nombre
+                };
             }
         }
 
-        return true;
+        return { permitido: true };
     },
 };
