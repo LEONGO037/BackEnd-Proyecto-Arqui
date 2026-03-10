@@ -126,3 +126,28 @@ export const getCursosSinDocente = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+export const validarInscripcionCurso = async (req, res) => {
+  try {
+
+    const estudiante_id = req.usuario.id;
+    const { curso_id } = req.params;
+
+    const permitido = await CursosModel.validarPrerrequisitos(
+      estudiante_id,
+      curso_id
+    );
+
+    if (!permitido) {
+      return res.status(403).json({
+        mensaje: "No puedes inscribirte a este curso. Debes aprobar el prerrequisito primero."
+      });
+    }
+
+    res.json({
+      mensaje: "Prerrequisitos cumplidos. Puedes inscribirte."
+    });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
