@@ -6,7 +6,10 @@ export const CursosModel = {
      */
     getAll: async () => {
         const { rows } = await pool.query(
-            `SELECT id, nombre, descripcion, costo, cupo_maximo FROM public.cursos WHERE activo = true ORDER BY id`
+            `SELECT id, nombre, descripcion, costo, cupo_maximo, minimo_estudiantes 
+             FROM public.cursos 
+             WHERE activo = true 
+             ORDER BY id`
         );
         return rows;
     },
@@ -19,24 +22,26 @@ export const CursosModel = {
         try {
             await client.query("BEGIN");
 
-            const { nombre, descripcion, costo, cupo_maximo, prerrequisitos = [] } = datos;
+            const { nombre, descripcion, costo, cupo_maximo, minimo_estudiantes, prerrequisitos = [] } = datos;
 
             // 1. Insertar el curso
             const queryCurso = `
-        INSERT INTO public.cursos (nombre, descripcion, costo, cupo_maximo)
-        VALUES ($1, $2, $3, $4)
-        RETURNING *;
-      `;
-            const valuesCurso = [nombre, descripcion, costo, cupo_maximo];
+                INSERT INTO public.cursos (nombre, descripcion, costo, cupo_maximo, minimo_estudiantes)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING *;
+            `;
+
+            const valuesCurso = [nombre, descripcion, costo, cupo_maximo, minimo_estudiantes ?? 1];
             const { rows: rowsCurso } = await client.query(queryCurso, valuesCurso);
             const cursoCreado = rowsCurso[0];
 
             // 2. Insertar prerrequisitos si existen
             if (prerrequisitos && prerrequisitos.length > 0) {
                 const queryPrerrequisito = `
-          INSERT INTO public.curso_prerrequisitos (curso_id, curso_prerrequisito_id)
-          VALUES ($1, $2);
-        `;
+                    INSERT INTO public.curso_prerrequisitos (curso_id, curso_prerrequisito_id)
+                    VALUES ($1, $2);
+                `;
+
                 for (const idPrerrequisito of prerrequisitos) {
                     await client.query(queryPrerrequisito, [cursoCreado.id, idPrerrequisito]);
                 }
@@ -44,6 +49,7 @@ export const CursosModel = {
 
             await client.query("COMMIT");
             return cursoCreado;
+
         } catch (error) {
             await client.query("ROLLBACK");
             throw error;
@@ -51,52 +57,72 @@ export const CursosModel = {
             client.release();
         }
     },
+
     /**
      * Obtiene los cursos que no tienen un docente asignado.
      */
     getCursosSinDocente: async () => {
         const query = `
-            SELECT c.id, c.nombre, c.descripcion, c.costo, c.cupo_maximo
+            SELECT c.id, c.nombre, c.descripcion, c.costo, c.cupo_maximo, c.minimo_estudiantes
             FROM public.cursos c
             LEFT JOIN public.docente_curso dc ON c.id = dc.curso_id
             WHERE dc.curso_id IS NULL AND c.activo = true
             ORDER BY c.id;
         `;
+
         const { rows } = await pool.query(query);
         return rows;
     },
+
+    /**
+     * Actualiza el mínimo de estudiantes de un curso
+     */
+    updateMinimoEstudiantes: async (cursoId, minimoEstudiantes) => {
+        const query = `
+            UPDATE public.cursos
+            SET minimo_estudiantes = $1
+            WHERE id = $2
+            RETURNING id, nombre, descripcion, costo, cupo_maximo, minimo_estudiantes, activo;
+        `;
+
+        const { rows } = await pool.query(query, [minimoEstudiantes, cursoId]);
+        return rows[0] || null;
+    },
+
+    /**
+     * Valida si un estudiante cumple los prerrequisitos de un curso
+     */
     validarPrerrequisitos: async (estudiante_id, curso_id) => {
 
-    // obtener prerrequisitos del curso
-    const prerreq = await pool.query(
-        `SELECT curso_prerrequisito_id
-         FROM public.curso_prerrequisitos
-         WHERE curso_id = $1`,
-        [curso_id]
-    );
-
-    // si no tiene prerrequisitos, puede inscribirse
-    if (prerreq.rows.length === 0) {
-        return true;
-    }
-
-    for (const pr of prerreq.rows) {
-
-        const aprobado = await pool.query(
-            `SELECT nota_final
-             FROM public.estudiante_curso
-             WHERE estudiante_id = $1
-             AND curso_id = $2
-             AND nota_final >= 51`,
-            [estudiante_id, pr.curso_prerrequisito_id]
+        // obtener prerrequisitos del curso
+        const prerreq = await pool.query(
+            `SELECT curso_prerrequisito_id
+             FROM public.curso_prerrequisitos
+             WHERE curso_id = $1`,
+            [curso_id]
         );
 
-        if (aprobado.rows.length === 0) {
-            return false;
+        // si no tiene prerrequisitos, puede inscribirse
+        if (prerreq.rows.length === 0) {
+            return true;
         }
-    }
 
-    return true;
-},
+        for (const pr of prerreq.rows) {
+
+            const aprobado = await pool.query(
+                `SELECT nota_final
+                 FROM public.estudiante_curso
+                 WHERE estudiante_id = $1
+                 AND curso_id = $2
+                 AND nota_final >= 51`,
+                [estudiante_id, pr.curso_prerrequisito_id]
+            );
+
+            if (aprobado.rows.length === 0) {
+                return false;
+            }
+        }
+
+        return true;
+    },
 };
-

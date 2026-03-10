@@ -5,11 +5,14 @@ import { obtenerUsuarioPorEmailConRol,
   obtenerUsuarioPorEmail,
   crearUsuario
  } from "../models/usuario.modelo.js";
+import {
+  validarCredencialesLogin,
+  validarRegistroEstudiante,
+} from "../validators/autenticacion.validator.js";
 
 export const iniciarSesion = async (email, password) => {
-  if (!email || !password) {
-    throw new Error("Correo y contraseña son obligatorios");
-  }
+  validarCredencialesLogin({ email, password });
+
   const usuario = await obtenerUsuarioPorEmailConRol(email);
   if (!usuario) throw new Error("Credenciales incorrectas");
 
@@ -46,10 +49,7 @@ export const registrarEstudiante = async (datos) => {
     password
   } = datos;
 
-  // ci_nit ya NO es obligatorio — el usuario puede registrarse sin él
-  if (!nombre || !apellido_paterno || !email || !password) {
-    throw new Error("Los campos obligatorios no fueron enviados");
-  }
+  validarRegistroEstudiante({ nombre, apellido_paterno, email, password });
 
   const usuarioExistente = await obtenerUsuarioPorEmail(email);
   if (usuarioExistente) {

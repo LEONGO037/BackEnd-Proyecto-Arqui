@@ -7,6 +7,7 @@ export const obtenerCursosPorDocente = async (usuario_id) => {
         c.nombre,
         c.descripcion,
         c.costo,
+        c.minimo_estudiantes,
         dc.estado as estado_curso,
         dc.fecha_asignacion,
         COUNT(DISTINCT ec.estudiante_id) as alumnos,
@@ -15,7 +16,7 @@ export const obtenerCursosPorDocente = async (usuario_id) => {
      JOIN cursos c ON c.id = dc.curso_id
      LEFT JOIN estudiante_curso ec ON ec.curso_id = c.id
      WHERE dc.usuario_id = $1
-     GROUP BY c.id, c.nombre, c.descripcion, c.costo, dc.estado, dc.fecha_asignacion
+     GROUP BY c.id, c.nombre, c.descripcion, c.costo, c.minimo_estudiantes, dc.estado, dc.fecha_asignacion
      ORDER BY c.nombre`,
     [usuario_id]
   );
@@ -44,6 +45,23 @@ export const obtenerEstadoActual = async (usuario_id, curso_id) => {
   );
 
   return resultado.rows[0];
+};
+
+export const obtenerDatosMinimosInicio = async (usuario_id, curso_id) => {
+  const resultado = await pool.query(
+    `SELECT
+        c.id AS curso_id,
+        c.minimo_estudiantes,
+        COUNT(DISTINCT ec.estudiante_id) AS inscritos
+     FROM docente_curso dc
+     JOIN cursos c ON c.id = dc.curso_id
+     LEFT JOIN estudiante_curso ec ON ec.curso_id = c.id
+     WHERE dc.usuario_id = $1 AND dc.curso_id = $2
+     GROUP BY c.id, c.minimo_estudiantes`,
+    [usuario_id, curso_id]
+  );
+
+  return resultado.rows[0] || null;
 };
 
 export const obtenerEstudiantesPorCurso = async (usuario_id, curso_id) => {
