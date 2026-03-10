@@ -65,19 +65,19 @@ export const CursosModel = {
         const { rows } = await pool.query(query);
         return rows;
     },
-    validarPrerrequisitos: async (estudiante_id, curso_id) => {
+   validarPrerrequisitos: async (estudiante_id, curso_id) => {
 
-    // obtener prerrequisitos del curso
     const prerreq = await pool.query(
-        `SELECT curso_prerrequisito_id
-         FROM public.curso_prerrequisitos
-         WHERE curso_id = $1`,
+        `SELECT cp.curso_prerrequisito_id, c.nombre
+         FROM public.curso_prerrequisitos cp
+         JOIN public.cursos c
+           ON c.id = cp.curso_prerrequisito_id
+         WHERE cp.curso_id = $1`,
         [curso_id]
     );
 
-    // si no tiene prerrequisitos, puede inscribirse
     if (prerreq.rows.length === 0) {
-        return true;
+        return { permitido: true };
     }
 
     for (const pr of prerreq.rows) {
@@ -92,11 +92,14 @@ export const CursosModel = {
         );
 
         if (aprobado.rows.length === 0) {
-            return false;
+            return {
+                permitido: false,
+                curso_faltante: pr.nombre
+            };
         }
     }
 
-    return true;
+    return { permitido: true };
 },
 };
 

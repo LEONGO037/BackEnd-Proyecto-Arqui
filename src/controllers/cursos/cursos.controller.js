@@ -76,16 +76,16 @@ export const validarInscripcionCurso = async (req, res) => {
     const estudiante_id = req.usuario.id;
     const { curso_id } = req.params;
 
-    const permitido = await CursosModel.validarPrerrequisitos(
-      estudiante_id,
-      curso_id
-    );
+    const resultado = await CursosModel.validarPrerrequisitos(
+  estudiante_id,
+  curso_id
+);
 
-    if (!permitido) {
-      return res.status(403).json({
-        mensaje: "No puedes inscribirte a este curso. Debes aprobar el prerrequisito primero."
-      });
-    }
+    if (!resultado.permitido) {
+  return res.status(403).json({
+    mensaje: `Debes aprobar primero el curso: ${resultado.curso_faltante}`
+  });
+}
 
     res.json({
       mensaje: "Prerrequisitos cumplidos. Puedes inscribirte."
