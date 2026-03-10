@@ -1,7 +1,8 @@
 import {
   obtenerCursosPorDocente,
   actualizarEstadoCursoDocente,
-  obtenerEstadoActual
+  obtenerEstadoActual,
+  obtenerDatosMinimosInicio
 } from "../../models/docente/curso.js";
 
 export const listarCursosDocente = async (usuario_id) => {
@@ -36,6 +37,21 @@ export const cambiarEstadoCurso = async (usuario_id, curso_id, nuevoEstado) => {
 
   if (estadoActual === "NO_ACTIVO" && nuevoEstado === "FINALIZADO") {
     throw new Error("Debe activarse antes de finalizarse");
+  }
+
+  if (estadoActual === "NO_ACTIVO" && nuevoEstado === "ACTIVO") {
+    const datosInicio = await obtenerDatosMinimosInicio(usuario_id, curso_id);
+
+    if (!datosInicio) {
+      throw new Error("Curso no encontrado o no pertenece al docente");
+    }
+
+    const inscritos = Number(datosInicio.inscritos || 0);
+    const minimoEstudiantes = Number(datosInicio.minimo_estudiantes || 1);
+
+    if (inscritos < minimoEstudiantes) {
+      throw new Error(`No se puede iniciar el curso. Inscritos actuales: ${inscritos}. Mínimo requerido: ${minimoEstudiantes}.`);
+    }
   }
 
   const resultado = await actualizarEstadoCursoDocente(
