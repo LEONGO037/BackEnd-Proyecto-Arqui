@@ -1,4 +1,4 @@
-import { obtenerEstudiantesCurso,actualizarNotaFinal } from "../../models/docente/estudiante.js";
+import { obtenerEstudiantesCurso, actualizarNotaFinal } from "../../models/docente/estudiante.js";
 
 export const listarEstudiantesCurso = async (docente_id, curso_id) => {
 

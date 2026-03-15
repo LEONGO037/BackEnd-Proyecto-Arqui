@@ -2,8 +2,12 @@ import {
   obtenerCursosPorDocente,
   actualizarEstadoCursoDocente,
   obtenerEstadoActual,
-  obtenerDatosMinimosInicio
+  obtenerDatosMinimosInicio,
+  obtenerEstudiantesPorCurso,
+  actualizarNotasEstudiantes
 } from "../../models/docente/curso.js";
+import { obtenerDatosParaCertificado } from "../../models/docente/estudiante.js";
+import { enviarNotificacionResultado } from "../certificado/certificado.email.service.js";
 
 export const listarCursosDocente = async (usuario_id) => {
 
@@ -59,6 +63,28 @@ export const cambiarEstadoCurso = async (usuario_id, curso_id, nuevoEstado) => {
     curso_id,
     nuevoEstado
   );
+
+  if (nuevoEstado === "FINALIZADO") {
+    obtenerEstudiantesPorCurso(usuario_id, curso_id)
+      .then((estudiantes) => {
+        return Promise.all(
+          estudiantes.map((est) =>
+            obtenerDatosParaCertificado(est.estudiante_id, curso_id)
+              .then((datos) => {
+                if (!datos || est.nota_final === null || est.nota_final === undefined) return;
+                const nombreCompleto = `${datos.nombre} ${datos.apellido_paterno} ${datos.apellido_materno}`.trim();
+                return enviarNotificacionResultado(datos.email, nombreCompleto, datos.curso_nombre, est.nota_final);
+              })
+              .catch((err) => {
+                console.error(`Error al enviar notificación al estudiante ${est.estudiante_id}:`, err.message);
+              })
+          )
+        );
+      })
+      .catch((err) => {
+        console.error("Error al obtener estudiantes para notificación de cierre:", err.message);
+      });
+  }
 
   return resultado;
 };
