@@ -127,4 +127,79 @@ export const CursosModel = {
 
         return { permitido: true };
     },
+    update: async (id, datos) => {
+
+  const { nombre, descripcion, costo, cupo_maximo, minimo_estudiantes } = datos;
+
+  const query = `
+    UPDATE cursos
+    SET 
+      nombre = COALESCE($1, nombre),
+      descripcion = COALESCE($2, descripcion),
+      costo = COALESCE($3, costo),
+      cupo_maximo = COALESCE($4, cupo_maximo),
+      minimo_estudiantes = COALESCE($5, minimo_estudiantes)
+    WHERE id = $6
+    RETURNING *;
+  `;
+
+  const values = [
+    nombre,
+    descripcion,
+    costo,
+    cupo_maximo,
+    minimo_estudiantes,
+    id
+  ];
+
+  const { rows } = await pool.query(query, values);
+
+  if (rows.length === 0) {
+    throw new Error("Curso no encontrado");
+  }
+
+  return rows[0];
+},
+updatePrerrequisitos: async (cursoId, prerrequisitos) => {
+
+  const client = await pool.connect();
+
+  try {
+
+    await client.query("BEGIN");
+
+    // borrar prerrequisitos actuales
+    await client.query(
+      `DELETE FROM curso_prerrequisitos
+       WHERE curso_id = $1`,
+      [cursoId]
+    );
+
+    // insertar nuevos
+    for (const prer of prerrequisitos) {
+
+      await client.query(
+        `INSERT INTO curso_prerrequisitos
+         (curso_id, curso_prerrequisito_id)
+         VALUES ($1,$2)`,
+        [cursoId, prer]
+      );
+
+    }
+
+    await client.query("COMMIT");
+
+    return { cursoId, prerrequisitos };
+
+  } catch(err) {
+
+    await client.query("ROLLBACK");
+    throw err;
+
+  } finally {
+    client.release();
+  }
+
+}
 };
+

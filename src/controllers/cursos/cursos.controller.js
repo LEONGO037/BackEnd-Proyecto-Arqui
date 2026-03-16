@@ -151,3 +151,59 @@ export const validarInscripcionCurso = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+export const updateCurso = async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const cursoActualizado = await CursosModel.update(id, req.body);
+
+    // Auditoría
+    await registrarAuditoria({
+      usuario_id: req.usuario.id,
+      accion: "UPDATE",
+      tabla_afectada: "cursos",
+      registro_id: id,
+      detalle: req.body
+    });
+
+    res.json({
+      mensaje: "Curso actualizado correctamente",
+      data: cursoActualizado
+    });
+
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+export const updatePrerrequisitos = async (req,res)=>{
+
+  try{
+
+    const { id } = req.params;
+    const { prerrequisitos } = req.body;
+
+    const resultado = await CursosModel.updatePrerrequisitos(
+      id,
+      prerrequisitos
+    );
+
+    await registrarAuditoria({
+      usuario_id: req.usuario.id,
+      accion: "UPDATE",
+      tabla_afectada: "curso_prerrequisitos",
+      registro_id: id,
+      detalle: { prerrequisitos }
+    });
+
+    res.json({
+      mensaje: "Prerrequisitos actualizados",
+      data: resultado
+    });
+
+  }catch(err){
+    res.status(400).json({ error: err.message });
+  }
+
+};
