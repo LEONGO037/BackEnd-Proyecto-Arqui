@@ -1,10 +1,10 @@
 import express from "express";
-import { 
-  getCursos, 
-  createCurso, 
-  getCursosSinDocente, 
-  actualizarMinimoEstudiantesCurso, 
-  validarInscripcionCurso 
+import {
+  getCursos,
+  createCurso,
+  getCursosSinDocente,
+  actualizarMinimoEstudiantesCurso,
+  validarInscripcionCurso
 } from "../../controllers/cursos/cursos.controller.js";
 
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
