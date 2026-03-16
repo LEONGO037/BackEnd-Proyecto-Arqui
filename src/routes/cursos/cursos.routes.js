@@ -5,7 +5,7 @@ import {
   getCursosSinDocente, 
   actualizarMinimoEstudiantesCurso, 
   validarInscripcionCurso, 
-  updateCurso
+  updateCurso,updatePrerrequisitos
 } from "../../controllers/cursos/cursos.controller.js";
 import { verificarRol } from "../../middlewares/roles.middleware.js";
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
