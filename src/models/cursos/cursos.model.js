@@ -6,13 +6,15 @@ export const CursosModel = {
      */
     getAll: async () => {
         const { rows } = await pool.query(
-            `SELECT id, nombre, descripcion, costo, cupo_maximo, minimo_estudiantes 
-             FROM public.cursos 
-             WHERE activo = true 
+            `SELECT c.id, c.nombre, c.descripcion, c.costo, c.cupo_maximo, c.minimo_estudiantes, dc.estado
+             FROM public.cursos c
+             JOIN public.docente_curso dc ON c.id = dc.curso_id
+             WHERE c.activo = true 
              ORDER BY id`
         );
         return rows;
     },
+
 
     /**
      * Crea un nuevo curso y sus prerrequisitos en una transacción.
