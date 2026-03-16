@@ -4,7 +4,8 @@ import {
   obtenerEstadoActual,
   obtenerDatosMinimosInicio,
   obtenerEstudiantesPorCurso,
-  actualizarNotasEstudiantes,obtenerMetricasCurso
+  actualizarNotasEstudiantes,
+  obtenerMetricasCurso
 } from "../../models/docente/curso.js";
 import { obtenerDatosParaCertificado } from "../../models/docente/estudiante.js";
 import { enviarNotificacionResultado } from "../certificado/certificado.email.service.js";
