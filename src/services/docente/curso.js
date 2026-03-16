@@ -87,7 +87,10 @@ export const cambiarEstadoCurso = async (usuario_id, curso_id, nuevoEstado) => {
       });
   }
 
-  return resultado;
+  return {
+    ...resultado,
+    estado_anterior: estadoActual,
+  };
 };
 
 export const obtenerEstudiantes = async (usuario_id, curso_id) => {

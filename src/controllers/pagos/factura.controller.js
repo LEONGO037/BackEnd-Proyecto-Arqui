@@ -1,5 +1,6 @@
 // src/controllers/pagos/factura.controller.js
 import { procesarFacturacion } from '../../services/factura/emisionFactura.service.js';
+import { registrarAuditoriaSegura } from '../../services/auditoria.service.js';
 
 export const postGenerarYEnviarFactura = async (req, res) => {
   try {
@@ -30,6 +31,18 @@ export const postGenerarYEnviarFactura = async (req, res) => {
       nit, 
       curso_ids, 
       transaccionId 
+    });
+
+    await registrarAuditoriaSegura({
+      usuario_id: estudianteId,
+      accion: 'CREATE',
+      tabla_afectada: 'facturas',
+      detalle: {
+        evento: 'GENERAR_ENVIAR_FACTURA',
+        nit,
+        cursos: curso_ids,
+        transaccion_id: transaccionId,
+      },
     });
 
     // 4. Responder éxito al cliente

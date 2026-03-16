@@ -9,6 +9,7 @@ import { registrarAuditoria } from "../../services/auditoria.service.js";
 export const getCursos = async (req, res) => {
   try {
     const cursos = await CursosModel.getAll();
+
     res.json(cursos);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -121,6 +122,7 @@ export const actualizarMinimoEstudiantesCurso = async (req, res) => {
 export const getCursosSinDocente = async (req, res) => {
   try {
     const cursos = await CursosModel.getCursosSinDocente();
+
     res.json(cursos);
   } catch (err) {
     res.status(500).json({ error: err.message });

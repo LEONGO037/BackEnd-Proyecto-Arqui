@@ -1,4 +1,5 @@
 import { listarEstudiantesCurso,registrarNotaFinal } from "../../services/docente/estudiante.js";
+import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
 
 export const verEstudiantesCurso = async (req, res) => {
 
@@ -32,6 +33,19 @@ export const registrarNota = async (req, res) => {
       curso_id,
       nota
     );
+
+    await registrarAuditoriaSegura({
+      usuario_id: docente_id,
+      accion: "UPDATE",
+      tabla_afectada: "estudiante_curso",
+      registro_id: resultado.id,
+      detalle: {
+        evento: "REGISTRO_NOTA_FINAL_DOCENTE",
+        curso_id: Number(curso_id),
+        estudiante_id: Number(estudiante_id),
+        nota: Number(nota),
+      },
+    });
 
     res.json({
       mensaje: "Nota registrada correctamente",

@@ -10,12 +10,14 @@ import {
   obtenerCalificacionesEstudiantePorCurso,
   eliminarCalificacion,
 } from "../../models/tareas/tareas.model.js";
+import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
 
 // GET /api/tareas/curso/:cursoId — obtener todas las evaluaciones/tareas de un curso
 export const getTareasPorCurso = async (req, res) => {
   try {
     const { cursoId } = req.params;
     const evaluaciones = await obtenerEvaluacionesPorCurso(Number(cursoId));
+
     res.json(evaluaciones);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -30,6 +32,7 @@ export const getTareaPorId = async (req, res) => {
     if (!evaluacion) {
       return res.status(404).json({ error: "Evaluación no encontrada" });
     }
+
     res.json(evaluacion);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -49,6 +52,18 @@ export const postCrearTarea = async (req, res) => {
       tipo,
       fecha_vencimiento,
       orden: orden ? Number(orden) : null,
+    });
+
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: "CREATE",
+      tabla_afectada: "configuracion_evaluacion",
+      registro_id: evaluacion.id,
+      detalle: {
+        evento: "CREAR_TAREA",
+        curso_id: evaluacion.curso_id,
+        nombre: evaluacion.nombre,
+      },
     });
 
     res.status(201).json({
@@ -75,6 +90,17 @@ export const putActualizarTarea = async (req, res) => {
       orden: orden ? Number(orden) : undefined,
     });
 
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: "UPDATE",
+      tabla_afectada: "configuracion_evaluacion",
+      registro_id: evaluacion.id,
+      detalle: {
+        evento: "ACTUALIZAR_TAREA",
+        cambios: req.body,
+      },
+    });
+
     res.json({
       mensaje: "Evaluación actualizada exitosamente",
       data: evaluacion,
@@ -89,6 +115,17 @@ export const deleteEliminarTarea = async (req, res) => {
   try {
     const { tareaId } = req.params;
     await eliminarEvaluacion(Number(tareaId));
+
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: "DELETE",
+      tabla_afectada: "configuracion_evaluacion",
+      registro_id: Number(tareaId),
+      detalle: {
+        evento: "ELIMINAR_TAREA",
+      },
+    });
+
     res.json({ mensaje: "Evaluación eliminada exitosamente" });
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -107,6 +144,19 @@ export const postAsignarCalificacion = async (req, res) => {
       nota: Number(nota),
     });
 
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: "CREATE",
+      tabla_afectada: "notas",
+      registro_id: resultado.id,
+      detalle: {
+        evento: "ASIGNAR_CALIFICACION",
+        tarea_id: Number(tareaId),
+        estudiante_curso_id: Number(estudiante_curso_id),
+        nota: Number(nota),
+      },
+    });
+
     res.status(201).json({
       mensaje: "Nota asignada exitosamente",
       data: resultado,
@@ -121,6 +171,7 @@ export const getCalificacionesPorTarea = async (req, res) => {
   try {
     const { tareaId } = req.params;
     const calificaciones = await obtenerCalificacionesPorEvaluacion(Number(tareaId));
+
     res.json(calificaciones);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -132,6 +183,7 @@ export const getCalificacionesEstudiante = async (req, res) => {
   try {
     const { estudianteCursoId } = req.params;
     const calificaciones = await obtenerCalificacionesEstudiantePorCurso(Number(estudianteCursoId));
+
     res.json(calificaciones);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -143,6 +195,17 @@ export const deleteCalificacion = async (req, res) => {
   try {
     const { notaId } = req.params;
     await eliminarCalificacion(Number(notaId));
+
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: "DELETE",
+      tabla_afectada: "notas",
+      registro_id: Number(notaId),
+      detalle: {
+        evento: "ELIMINAR_CALIFICACION",
+      },
+    });
+
     res.json({ mensaje: "Nota eliminada exitosamente" });
   } catch (err) {
     res.status(400).json({ error: err.message });

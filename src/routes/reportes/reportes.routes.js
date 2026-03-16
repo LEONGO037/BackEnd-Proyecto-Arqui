@@ -6,6 +6,7 @@ import {
   getResumenReporte,
   getReporteInscripciones,
   getReportePagos,
+  getReporteAuditoria,
   descargarPDFInscripciones,
   descargarPDFPagos,
 } from "../../controllers/reportes/reportes.controller.js";
@@ -34,6 +35,12 @@ router.get("/inscripciones", getReporteInscripciones);
  * Query params opcionales: ?desde=YYYY-MM-DD&hasta=YYYY-MM-DD
  */
 router.get("/pagos", getReportePagos);
+
+/**
+ * GET /api/reportes/auditoria
+ * JSON con el historial de acciones registradas en auditoria.
+ */
+router.get("/auditoria", getReporteAuditoria);
 
 /**
  * GET /api/reportes/inscripciones/pdf

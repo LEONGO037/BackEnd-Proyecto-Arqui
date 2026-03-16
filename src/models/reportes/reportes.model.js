@@ -168,3 +168,78 @@ export const obtenerInscripcionesPorCurso = async () => {
   );
   return rows;
 };
+
+/**
+ * Obtiene registros de auditoria del sistema para el panel administrativo.
+ * @param {Object} filtros
+ * @param {number} [filtros.limite=100] - Maximo de registros a devolver.
+ * @param {string} [filtros.accion] - Filtro por tipo de accion.
+ * @param {string} [filtros.usuario] - Filtro por nombre/apellido/email de usuario.
+ * @param {Date} [filtros.desde] - Fecha inicial.
+ * @param {Date} [filtros.hasta] - Fecha final.
+ */
+export const obtenerRegistrosAuditoria = async ({
+  limite = 100,
+  accion,
+  usuario,
+  desde,
+  hasta,
+} = {}) => {
+  const condiciones = [];
+  const valores = [];
+  let idx = 1;
+
+  if (accion) {
+    condiciones.push(`UPPER(a.accion) = UPPER($${idx})`);
+    valores.push(accion);
+    idx++;
+  }
+
+  if (usuario) {
+    condiciones.push(`(
+      u.nombre ILIKE $${idx}
+      OR u.apellido_paterno ILIKE $${idx}
+      OR COALESCE(u.apellido_materno, '') ILIKE $${idx}
+      OR u.email ILIKE $${idx}
+    )`);
+    valores.push(`%${usuario}%`);
+    idx++;
+  }
+
+  if (desde) {
+    condiciones.push(`a.fecha >= $${idx}`);
+    valores.push(desde);
+    idx++;
+  }
+
+  if (hasta) {
+    condiciones.push(`a.fecha <= $${idx}`);
+    valores.push(hasta);
+    idx++;
+  }
+
+  const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+
+  valores.push(Number(limite));
+
+  const { rows } = await pool.query(
+    `SELECT
+      a.id,
+      a.usuario_id,
+      CONCAT(u.nombre, ' ', u.apellido_paterno, COALESCE(' ' || u.apellido_materno, '')) AS usuario,
+      u.email AS usuario_email,
+      a.accion,
+      a.tabla_afectada,
+      a.registro_id,
+      a.fecha,
+      a.detalle
+    FROM public.auditoria a
+    LEFT JOIN public.usuarios u ON u.id = a.usuario_id
+    ${where}
+    ORDER BY a.fecha DESC
+    LIMIT $${idx}`,
+    valores
+  );
+
+  return rows;
+};
