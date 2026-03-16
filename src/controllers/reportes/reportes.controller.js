@@ -4,11 +4,13 @@ import {
   obtenerReportePagos,
   obtenerResumenEstadisticas,
   obtenerInscripcionesPorCurso,
+  obtenerRegistrosAuditoria,
 } from "../../models/reportes/reportes.model.js";
 import {
   generarPDFInscripciones,
   generarPDFPagos,
 } from "../../services/reportes/reportes.pdf.service.js";
+import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -22,6 +24,21 @@ const parseFiltros = (query) => {
     desde: desde ? new Date(desde) : undefined,
     hasta: hasta ? new Date(hasta + "T23:59:59") : undefined,
     curso_id: curso_id ? Number(curso_id) : undefined,
+  };
+};
+
+const parseFiltrosAuditoria = (query) => {
+  const limiteNum = Number(query.limite);
+  const limite = Number.isInteger(limiteNum) && limiteNum > 0
+    ? Math.min(limiteNum, 500)
+    : 100;
+
+  return {
+    limite,
+    accion: query.accion || undefined,
+    usuario: query.usuario || undefined,
+    desde: query.desde ? new Date(query.desde) : undefined,
+    hasta: query.hasta ? new Date(query.hasta + "T23:59:59") : undefined,
   };
 };
 
@@ -56,6 +73,7 @@ export const getReporteInscripciones = async (req, res) => {
   try {
     const filtros = parseFiltros(req.query);
     const datos = await obtenerReporteInscripciones(filtros);
+
     res.json({ total: datos.length, datos });
   } catch (err) {
     console.error("Error getReporteInscripciones:", err.message);
@@ -71,9 +89,39 @@ export const getReportePagos = async (req, res) => {
   try {
     const filtros = parseFiltros(req.query);
     const datos = await obtenerReportePagos(filtros);
+
     res.json({ total: datos.length, datos });
   } catch (err) {
     console.error("Error getReportePagos:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * GET /api/reportes/auditoria
+ * Lista de actividad relevante del sistema para administradores.
+ */
+export const getReporteAuditoria = async (req, res) => {
+  try {
+    const filtros = parseFiltrosAuditoria(req.query);
+    const datos = await obtenerRegistrosAuditoria(filtros);
+
+    res.json({
+      total: datos.length,
+      datos,
+    });
+
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: "READ",
+      tabla_afectada: "auditoria",
+      detalle: {
+        evento: "CONSULTA_REPORTE_AUDITORIA",
+        total: datos.length,
+      },
+    });
+  } catch (err) {
+    console.error("Error getReporteAuditoria:", err.message);
     res.status(500).json({ error: err.message });
   }
 };
@@ -100,6 +148,7 @@ export const descargarPDFInscripciones = async (req, res) => {
       "Content-Disposition": `attachment; filename="reporte_inscripciones_${fecha}.pdf"`,
       "Content-Length": pdfBuffer.length,
     });
+
     res.send(pdfBuffer);
   } catch (err) {
     console.error("Error descargarPDFInscripciones:", err.message);
@@ -127,6 +176,7 @@ export const descargarPDFPagos = async (req, res) => {
       "Content-Disposition": `attachment; filename="reporte_pagos_${fecha}.pdf"`,
       "Content-Length": pdfBuffer.length,
     });
+
     res.send(pdfBuffer);
   } catch (err) {
     console.error("Error descargarPDFPagos:", err.message);

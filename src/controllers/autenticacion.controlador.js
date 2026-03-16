@@ -1,9 +1,22 @@
 import { registrarEstudiante } from "../services/autenticacion.servicio.js";
 import { iniciarSesion } from "../services/autenticacion.servicio.js";
+import { registrarAuditoriaSegura } from "../services/auditoria.service.js";
 export const registrar = async (req, res) => {
   try {
 
     const usuario = await registrarEstudiante(req.body);
+
+    await registrarAuditoriaSegura({
+      usuario_id: usuario.id,
+      accion: "CREATE",
+      tabla_afectada: "usuarios",
+      registro_id: usuario.id,
+      detalle: {
+        evento: "REGISTRO_USUARIO",
+        email: usuario.email,
+        rol_id: usuario.rol_id,
+      },
+    });
 
     res.status(201).json({
       mensaje: "Estudiante registrado correctamente",

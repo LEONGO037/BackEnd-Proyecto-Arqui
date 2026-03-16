@@ -5,6 +5,7 @@ import {
   guardarNotas,
   obtenerMetricas
 } from "../../services/docente/curso.js";
+import { registrarAuditoria } from "../../services/auditoria.service.js";
 
 export const verMisCursos = async (req, res) => {
   try {
@@ -31,6 +32,19 @@ export const actualizarEstado = async (req, res) => {
       curso_id,
       estado
     );
+
+    await registrarAuditoria({
+      usuario_id,
+      accion: "UPDATE",
+      tabla_afectada: "docente_curso",
+      registro_id: resultado?.id || null,
+      detalle: {
+        evento: "CAMBIO_ESTADO_CURSO_DOCENTE",
+        curso_id: Number(curso_id),
+        estado_anterior: resultado?.estado_anterior || null,
+        estado_nuevo: resultado?.estado || estado,
+      },
+    });
 
     res.json({
       mensaje: "Estado actualizado correctamente",
