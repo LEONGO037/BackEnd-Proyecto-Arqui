@@ -10,7 +10,8 @@ import rutasTareas        from "./routes/tareas/tareas.routes.js";
 import rutasdocentecurso  from "./routes/administrador.docente.curso/administrador.curso.js";
 import rutasDocente       from "./routes/docente/curso.js";
 import rutasFactura       from "./routes/pagos/factura.routes.js";
-import rutasReportes      from "./routes/reportes/reportes.routes.js";  // ← NUEVO
+import rutasReportes         from "./routes/reportes/reportes.routes.js";  // ← NUEVO
+import rutasDocentePassword  from "./routes/docente/docenteValdacion.routes.js";
 
 const app = express();
 app.use(cors());
@@ -27,6 +28,7 @@ app.use("/api/admin-docente-curso", rutasdocentecurso);
 app.use("/api/docente",             rutasDocente);
 app.use("/api/facturas",            rutasFactura);
 app.use("/api/reportes",            rutasReportes);  // ← NUEVO
+app.use("/api/docente-password",    rutasDocentePassword);
 
 app.get("/", (req, res) => res.json({ message: "API funcionando correctamente" }));
 
