@@ -45,3 +45,20 @@ export const actualizarNotaFinal = async (
 
   return resultado.rows[0];
 };
+
+export const obtenerDatosParaCertificado = async (estudiante_id, curso_id) => {
+  const resultado = await pool.query(
+    `SELECT
+        u.nombre,
+        u.apellido_paterno,
+        u.apellido_materno,
+        u.email,
+        c.nombre AS curso_nombre
+     FROM usuarios u
+     JOIN estudiante_curso ec ON ec.estudiante_id = u.id
+     JOIN cursos c ON c.id = ec.curso_id
+     WHERE u.id = $1 AND ec.curso_id = $2`,
+    [estudiante_id, curso_id]
+  );
+  return resultado.rows[0];
+};

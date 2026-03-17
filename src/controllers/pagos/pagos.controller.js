@@ -2,6 +2,7 @@
 import { crearOrden, capturarOrden } from '../../services/paypal.service.js';
 import { inscribirEstudianteEnCurso, inscribirEstudianteEnCursos } from '../../models/inscripcion/inscripcion.model.js';
 import * as PagosModel from '../../models/pagos/pagos.model.js';
+import { registrarAuditoriaSegura } from '../../services/auditoria.service.js';
 
 export const getConfig = (req, res) => {
   res.json({ clientId: process.env.PAYPAL_CLIENT_ID });
@@ -35,6 +36,18 @@ export const postCrearOrden = async (req, res) => {
       descripcion,
       ids.join(',')
     );
+
+    await registrarAuditoriaSegura({
+      usuario_id: req.usuario.id,
+      accion: 'CREATE',
+      tabla_afectada: 'pagos',
+      detalle: {
+        evento: 'CREAR_ORDEN_PAYPAL',
+        order_id: orden.id,
+        cursos: ids,
+        monto_usd: Number(montoUSD),
+      },
+    });
 
     res.json({
       orderID: orden.id,
@@ -104,6 +117,18 @@ export const postCapturarOrden = async (req, res) => {
       }
     }
 
+    await registrarAuditoriaSegura({
+      usuario_id: estudianteId,
+      accion: 'CREATE',
+      tabla_afectada: 'pagos',
+      detalle: {
+        evento: 'CAPTURA_PAGO_PAYPAL',
+        transaccion: captura.id,
+        cursos: ids,
+        pagos_registrados: detallesPago.length,
+      },
+    });
+
     res.json({
       mensaje: ids.length === 1
         ? '¡Pago exitoso! Ya estás inscrito en el curso.'
@@ -126,6 +151,7 @@ export const getTodosLosPagos = async (req, res) => {
     const offset = parseInt(req.query.offset) || 0;
 
     const pagos = await PagosModel.obtenerTodosLosPagos(limit, offset);
+
     res.json(pagos);
 
   } catch (err) {
@@ -138,6 +164,7 @@ export const getPagosUsuario = async (req, res) => {
   try {
     const estudianteId = req.usuario.id;
     const pagos = await PagosModel.obtenerPagosPorUsuario(estudianteId);
+
     res.json(pagos);
 
   } catch (err) {

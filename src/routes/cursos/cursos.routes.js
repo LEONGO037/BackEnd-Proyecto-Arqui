@@ -1,12 +1,13 @@
 import express from "express";
-import {
-  getCursos,
-  createCurso,
-  getCursosSinDocente,
-  actualizarMinimoEstudiantesCurso,
-  validarInscripcionCurso
+import { 
+  getCursos, 
+  createCurso, 
+  getCursosSinDocente, 
+  actualizarMinimoEstudiantesCurso, 
+  validarInscripcionCurso, 
+  updateCurso,updatePrerrequisitos
 } from "../../controllers/cursos/cursos.controller.js";
-
+import { verificarRol } from "../../middlewares/roles.middleware.js";
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
 
 const router = express.Router();
@@ -27,6 +28,18 @@ router.get(
   "/validar-inscripcion/:curso_id",
   verificarToken,
   validarInscripcionCurso
+);
+router.put(
+  "/:id",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  updateCurso
+);
+router.put(
+  "/:id/prerrequisitos",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  updatePrerrequisitos
 );
 
 export default router;

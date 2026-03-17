@@ -28,3 +28,15 @@ export const registrarAuditoria = async ({ usuario_id, accion, tabla_afectada, r
         throw new Error(`Error en el servicio de auditoría: ${error.message}`);
     }
 };
+
+/**
+ * Registra auditoria sin interrumpir el flujo principal si ocurre un error.
+ */
+export const registrarAuditoriaSegura = async (payload) => {
+    try {
+        return await registrarAuditoria(payload);
+    } catch (error) {
+        console.error("Auditoria no registrada (continuando flujo):", error.message);
+        return null;
+    }
+};
