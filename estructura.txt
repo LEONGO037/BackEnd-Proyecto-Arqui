@@ -1,10 +1,13 @@
 .
 |-- estructura.txt
+|-- generarAdmin.js
 |-- package-lock.json
 |-- package.json
 |-- server.js
 `-- src
     |-- app.js
+    |-- assets
+    |   `-- logo.png
     |-- config
     |   `-- db.js
     |-- controllers
@@ -14,12 +17,21 @@
     |   |-- autenticacion.controlador.js
     |   |-- cursos
     |   |   `-- cursos.controller.js
+    |   |-- docente
+    |   |   |-- curso.estudiante.js
+    |   |   |-- curso.js
+    |   |   `-- estudiante.js
     |   |-- estudiante
     |   |   `-- estudiante.controller.js
     |   |-- inscripcion
     |   |   `-- inscripcion.controller.js
-    |   `-- pagos
-    |       `-- pagos.controller.js
+    |   |-- pagos
+    |   |   |-- factura.controller.js
+    |   |   `-- pagos.controller.js
+    |   |-- reportes
+    |   |   `-- reportes.controller.js
+    |   `-- tareas
+    |       `-- tareas.controller.js
     |-- middlewares
     |   |-- autenticacion.middleware.js
     |   `-- roles.middleware.js
@@ -27,11 +39,25 @@
     |   |-- administrador.docente
     |   |   |-- docente.curso.js
     |   |   `-- docente.modelo.js
+    |   |-- cursos
+    |   |   `-- cursos.model.js
+    |   |-- docente
+    |   |   |-- curso.estudiante.js
+    |   |   |-- curso.js
+    |   |   `-- estudiante.js
     |   |-- estudiante
     |   |   `-- estudiante.register.model.js
     |   |-- example.model.js
+    |   |-- factura
+    |   |   `-- factura.model.js
     |   |-- inscripcion
     |   |   `-- inscripcion.model.js
+    |   |-- pagos
+    |   |   `-- pagos.model.js
+    |   |-- reportes
+    |   |   `-- reportes.model.js
+    |   |-- tareas
+    |   |   `-- tareas.model.js
     |   `-- usuario.modelo.js
     |-- routes
     |   |-- admin.rutas.js
@@ -40,19 +66,41 @@
     |   |-- autenticacion.rutas.js
     |   |-- cursos
     |   |   `-- cursos.routes.js
+    |   |-- docente
+    |   |   `-- curso.js
     |   |-- estudiante
     |   |   `-- estudiante.routes.js
     |   |-- example.route.js
     |   |-- inscripcion
     |   |   `-- inscripcion.routes.js
-    |   `-- pagos
-    |       `-- pagos.routes.js
-    `-- services
-        |-- administrador.docente
-        |   |-- docente.curso.js
-        |   `-- docente.service.js
-        |-- auditoria.service.js
-        |-- autenticacion.servicio.js
-        `-- paypal.service.js
+    |   |-- pagos
+    |   |   |-- factura.routes.js
+    |   |   `-- pagos.routes.js
+    |   |-- reportes
+    |   |   `-- reportes.routes.js
+    |   `-- tareas
+    |       `-- tareas.routes.js
+    |-- services
+    |   |-- administrador.docente
+    |   |   |-- docente.curso.js
+    |   |   `-- docente.service.js
+    |   |-- auditoria.service.js
+    |   |-- autenticacion.servicio.js
+    |   |-- certificado
+    |   |   |-- certificado.email.service.js
+    |   |   `-- certificado.pdf.service.js
+    |   |-- docente
+    |   |   |-- curso.estudiante.js
+    |   |   |-- curso.js
+    |   |   `-- estudiante.js
+    |   |-- factura
+    |   |   |-- email.service.js
+    |   |   |-- emisionFactura.service.js
+    |   |   `-- factura.service.js
+    |   |-- paypal.service.js
+    |   `-- reportes
+    |       `-- reportes.pdf.service.js
+    `-- validators
+        `-- autenticacion.validator.js
 
-21 directories, 34 files
+39 directories, 64 files
