@@ -4,7 +4,8 @@ import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
 import { verificarRol } from "../../middlewares/roles.middleware.js";
 import { 
   crearDocenteAdmin,
-  verDocentes 
+  verDocentes,
+  actualizarDocenteAdmin
 } from "../../controllers/administrador.docente/docente.controller.js";
 import { asignarCursoAdmin } from "../../controllers/administrador.docente/docente.curso.js";
 const router = express.Router();
@@ -27,6 +28,13 @@ router.get(
   verificarToken,
   verificarRol("ADMINISTRADOR"),
   verDocentes
+);
+
+router.put(
+  "/docentes/:id",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  actualizarDocenteAdmin
 );
 
 

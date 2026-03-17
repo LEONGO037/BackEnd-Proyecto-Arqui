@@ -61,3 +61,47 @@ export const obtenerDocentes = async () => {
 
   return resultado.rows;
 };
+
+export const actualizarDocente = async (docenteId, datos) => {
+  const {
+    nombre,
+    apellido_paterno,
+    apellido_materno,
+    ci_nit,
+    email,
+    telefono,
+    direccion,
+  } = datos;
+
+  const resultado = await pool.query(
+    `UPDATE usuarios u
+     SET nombre = $1,
+         apellido_paterno = $2,
+         apellido_materno = $3,
+         ci_nit = $4,
+         email = $5,
+         telefono = $6,
+         direccion = $7
+     FROM roles r
+     WHERE u.rol_id = r.id
+       AND r.nombre = 'DOCENTE'
+       AND u.id = $8
+     RETURNING u.id, u.nombre, u.apellido_paterno, u.apellido_materno, u.ci_nit, u.email, u.telefono, u.direccion`,
+    [
+      nombre,
+      apellido_paterno,
+      apellido_materno || null,
+      ci_nit,
+      email,
+      telefono || null,
+      direccion || null,
+      docenteId,
+    ]
+  );
+
+  if (resultado.rows.length === 0) {
+    throw new Error("Docente no encontrado");
+  }
+
+  return resultado.rows[0];
+};
