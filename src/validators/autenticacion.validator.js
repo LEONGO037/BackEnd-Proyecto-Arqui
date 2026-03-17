@@ -31,3 +31,15 @@ export const validarRegistroEstudiante = ({ nombre, apellido_paterno, email, pas
   validarCorreoInstitucional(email);
   validarPasswordFuerte(password);
 };
+
+export const validarCambioPassword = ({ password_actual, nueva_password }) => {
+  if (!password_actual || !nueva_password) {
+    throw new Error('Los campos password_actual y nueva_password son obligatorios');
+  }
+
+  if (password_actual === nueva_password) {
+    throw new Error('La nueva contraseña debe ser diferente a la contraseña actual');
+  }
+
+  validarPasswordFuerte(nueva_password);
+};

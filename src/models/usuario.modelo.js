@@ -60,3 +60,27 @@ export const obtenerUsuarioPorEmailConRol = async (email) => {
 
   return resultado.rows[0];
 };
+
+export const obtenerUsuarioPorIdConRol = async (id) => {
+  const resultado = await pool.query(
+    `SELECT u.*, r.nombre AS rol_nombre
+     FROM usuarios u
+     JOIN roles r ON u.rol_id = r.id
+     WHERE u.id = $1`,
+    [id]
+  );
+
+  return resultado.rows[0];
+};
+
+export const actualizarPasswordUsuario = async (usuarioId, passwordHash) => {
+  const resultado = await pool.query(
+    `UPDATE usuarios
+     SET password_hash = $1
+     WHERE id = $2
+     RETURNING id, nombre, email`,
+    [passwordHash, usuarioId]
+  );
+
+  return resultado.rows[0];
+};
