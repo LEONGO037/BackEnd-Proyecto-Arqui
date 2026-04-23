@@ -3,33 +3,27 @@ import bcrypt from "bcrypt";
 import { obtenerUsuarioPorEmailConRol,
   obtenerRolPorNombre,
   obtenerUsuarioPorEmail,
-  crearUsuario
+  crearUsuario,
+  obtenerUsuarioPorIdConRol,
+  actualizarPasswordUsuario,
  } from "../models/usuario.modelo.js";
+import {
+  validarCredencialesLogin,
+  validarRegistroEstudiante,
+  validarCambioPassword,
+} from "../validators/autenticacion.validator.js";
 
 export const iniciarSesion = async (email, password) => {
-
-  if (!email || !password) {
-    throw new Error("Correo y contraseña son obligatorios");
-  }
+  validarCredencialesLogin({ email, password });
 
   const usuario = await obtenerUsuarioPorEmailConRol(email);
-
-  if (!usuario) {
-    throw new Error("Credenciales incorrectas");
-  }
+  if (!usuario) throw new Error("Credenciales incorrectas");
 
   const passwordValido = await bcrypt.compare(password, usuario.password_hash);
-
-  if (!passwordValido) {
-    throw new Error("Credenciales incorrectas");
-  }
+  if (!passwordValido) throw new Error("Credenciales incorrectas");
 
   const token = jwt.sign(
-    {
-      id: usuario.id,
-      email: usuario.email,
-      rol: usuario.rol_nombre
-    },
+    { id: usuario.id, email: usuario.email, rol: usuario.rol_nombre },
     process.env.JWT_SECRET,
     { expiresIn: "4h" }
   );
@@ -46,9 +40,7 @@ export const iniciarSesion = async (email, password) => {
   };
 };
 
-
 export const registrarEstudiante = async (datos) => {
-
   const {
     nombre,
     apellido_paterno,
@@ -60,9 +52,7 @@ export const registrarEstudiante = async (datos) => {
     password
   } = datos;
 
-  if (!nombre || !apellido_paterno || !ci_nit || !email || !password) {
-    throw new Error("Los campos obligatorios no fueron enviados");
-  }
+  validarRegistroEstudiante({ nombre, apellido_paterno, email, password });
 
   const usuarioExistente = await obtenerUsuarioPorEmail(email);
   if (usuarioExistente) {
@@ -79,14 +69,40 @@ export const registrarEstudiante = async (datos) => {
   const nuevoUsuario = await crearUsuario({
     nombre,
     apellido_paterno,
-    apellido_materno,
-    ci_nit,
-    telefono,
-    direccion,
+    apellido_materno: apellido_materno || '',
+    ci_nit: ci_nit || null,
+    telefono: telefono || null,
+    direccion: direccion || null,
     email,
     password_hash: passwordEncriptado,
     rol_id: rol.id
   });
 
   return nuevoUsuario;
+};
+
+export const cambiarPassword = async (usuarioId, passwordActual, nuevaPassword) => {
+  validarCambioPassword({
+    password_actual: passwordActual,
+    nueva_password: nuevaPassword,
+  });
+
+  const usuario = await obtenerUsuarioPorIdConRol(usuarioId);
+  if (!usuario) {
+    throw new Error("Usuario no encontrado");
+  }
+
+  const passwordValido = await bcrypt.compare(passwordActual, usuario.password_hash);
+  if (!passwordValido) {
+    throw new Error("La contraseña actual es incorrecta");
+  }
+
+  const nuevoHash = await bcrypt.hash(nuevaPassword, 10);
+  const usuarioActualizado = await actualizarPasswordUsuario(usuarioId, nuevoHash);
+
+  if (!usuarioActualizado) {
+    throw new Error("No se pudo actualizar la contraseña");
+  }
+
+  return usuarioActualizado;
 };

@@ -1,0 +1,42 @@
+import express from "express";
+// Le agregamos un ../ extra a todos para llegar a 'src'
+import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
+import { verificarRol } from "../../middlewares/roles.middleware.js";
+import { 
+  crearDocenteAdmin,
+  verDocentes,
+  actualizarDocenteAdmin
+} from "../../controllers/administrador.docente/docente.controller.js";
+import { asignarCursoAdmin } from "../../controllers/administrador.docente/docente.curso.js";
+const router = express.Router();
+
+router.post(
+  "/crear-docente",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  crearDocenteAdmin
+);
+
+router.post(
+  "/asignar-curso",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  asignarCursoAdmin
+);
+router.get(
+  "/docentes",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  verDocentes
+);
+
+router.put(
+  "/docentes/:id",
+  verificarToken,
+  verificarRol("ADMINISTRADOR"),
+  actualizarDocenteAdmin
+);
+
+
+
+export default router;

@@ -1,19 +1,58 @@
 .
 |-- estructura.txt
-|-- index.js
 |-- package-lock.json
 |-- package.json
+|-- server.js
 `-- src
     |-- app.js
     |-- config
     |   `-- db.js
     |-- controllers
-    |   `-- example.comtroller.js
-    |-- middleware
-    |   `-- middelware.js
-    |-- model
-    |   `-- example.model.js
-    `-- routes
-        `-- example.route.js
+    |   |-- administrador.docente
+    |   |   |-- docente.controller.js
+    |   |   `-- docente.curso.js
+    |   |-- autenticacion.controlador.js
+    |   |-- cursos
+    |   |   `-- cursos.controller.js
+    |   |-- estudiante
+    |   |   `-- estudiante.controller.js
+    |   |-- inscripcion
+    |   |   `-- inscripcion.controller.js
+    |   `-- pagos
+    |       `-- pagos.controller.js
+    |-- middlewares
+    |   |-- autenticacion.middleware.js
+    |   `-- roles.middleware.js
+    |-- models
+    |   |-- administrador.docente
+    |   |   |-- docente.curso.js
+    |   |   `-- docente.modelo.js
+    |   |-- estudiante
+    |   |   `-- estudiante.register.model.js
+    |   |-- example.model.js
+    |   |-- inscripcion
+    |   |   `-- inscripcion.model.js
+    |   `-- usuario.modelo.js
+    |-- routes
+    |   |-- admin.rutas.js
+    |   |-- administrador.docente.curso
+    |   |   `-- administrador.curso.js
+    |   |-- autenticacion.rutas.js
+    |   |-- cursos
+    |   |   `-- cursos.routes.js
+    |   |-- estudiante
+    |   |   `-- estudiante.routes.js
+    |   |-- example.route.js
+    |   |-- inscripcion
+    |   |   `-- inscripcion.routes.js
+    |   `-- pagos
+    |       `-- pagos.routes.js
+    `-- services
+        |-- administrador.docente
+        |   |-- docente.curso.js
+        |   `-- docente.service.js
+        |-- auditoria.service.js
+        |-- autenticacion.servicio.js
+        `-- paypal.service.js
 
-6 directories, 10 files
+21 directories, 34 files
