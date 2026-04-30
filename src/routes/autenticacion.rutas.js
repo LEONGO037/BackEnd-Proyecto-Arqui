@@ -6,6 +6,7 @@ import {
   cambiarPassword,
   verificarCodigo,
   solicitarReset,
+  verificarCodigoReset,
   resetearPassword,
   perfil,
 } from "../controllers/autenticacion.controlador.js";
@@ -26,6 +27,7 @@ router.post("/login", loginLimiter, login);
 router.post("/verificar-codigo", verificarCodigo);
 router.put("/cambiar-password", verificarToken, cambiarPassword);
 router.post("/solicitar-reset", solicitarReset);
+router.post("/verificar-codigo-reset", verificarCodigoReset);
 router.post("/reset-password", resetearPassword);
 router.get("/perfil", verificarToken, perfil);
 

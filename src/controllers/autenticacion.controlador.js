@@ -4,6 +4,7 @@ import {
   cambiarPassword as cambiarPasswordServicio,
   verificarCodigoEmail,
   solicitarResetPassword,
+  verificarCodigoReset as verificarCodigoResetServicio,
   resetPassword,
 } from "../services/autenticacion.servicio.js";
 import { registrarAuditoriaSegura } from "../services/auditoria.service.js";
@@ -89,6 +90,17 @@ export const solicitarReset = async (req, res, next) => {
   } catch (error) {
     console.error("Error al solicitar reset de contraseña:", error);
     res.status(500).json({ error: "No se pudo enviar el correo de restablecimiento. Intenta nuevamente." });
+  }
+};
+
+export const verificarCodigoReset = async (req, res, next) => {
+  try {
+    const { email, codigo } = req.body;
+    if (!email || !codigo) return res.status(400).json({ error: "Email y código son requeridos" });
+    const resultado = await verificarCodigoResetServicio(email, codigo);
+    res.json(resultado);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 };
 
