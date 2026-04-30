@@ -11,21 +11,18 @@ export const crearDocente = async (datos) => {
   const {
     nombre, apellido_paterno, apellido_materno,
     email, password_hash, rol_id,
-    codigo_verificacion, codigo_verificacion_expira,
   } = datos;
 
   const resultado = await pool.query(
     `INSERT INTO usuarios
     (nombre, apellido_paterno, apellido_materno, email, password_hash,
      rol_id,
-     email_verificado, debe_cambiar_password,
-     codigo_verificacion, codigo_verificacion_expira)
-    VALUES ($1,$2,$3,$4,$5,$6, FALSE, TRUE, $7,$8)
+     email_verificado, debe_cambiar_password)
+    VALUES ($1,$2,$3,$4,$5,$6, TRUE, TRUE)
     RETURNING id, nombre, email`,
     [
       nombre, apellido_paterno, apellido_materno,
-      email, password_hash, rol_id,
-      codigo_verificacion, codigo_verificacion_expira,
+      email, password_hash, rol_id
     ]
   );
   return resultado.rows[0];
