@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import dns from 'dns';
 
 // Configuración de Nodemailer (SMTP) optimizada para producción
