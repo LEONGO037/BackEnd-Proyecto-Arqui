@@ -1,8 +1,41 @@
+import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 
 const resend = new Resend(process.env.EMAIL_RESEND_API_KEY);
 
 const FROM = process.env.EMAIL_FROM || 'College X Nexus <onboarding@resend.dev>';
+
+const smtpTransporter = process.env.EMAIL_USER && process.env.EMAIL_PASS
+  ? nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    })
+  : null;
+
+const buildSmtpFrom = () => {
+  if (process.env.EMAIL_USER) {
+    return `College X Nexus <${process.env.EMAIL_USER}>`;
+  }
+  return FROM;
+};
+
+const enviarConSmtp = async ({ to, subject, html, attachments }) => {
+  if (!smtpTransporter) {
+    throw new Error('No hay configuracion SMTP de respaldo');
+  }
+
+  const destino = Array.isArray(to) ? to.join(', ') : to;
+  await smtpTransporter.sendMail({
+    from: buildSmtpFrom(),
+    to: destino,
+    subject,
+    html,
+    attachments,
+  });
+};
 
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
   const payload = {
@@ -12,7 +45,21 @@ export const enviarEmail = async ({ to, subject, html, attachments }) => {
     html,
   };
   if (attachments?.length) payload.attachments = attachments;
-  await resend.emails.send(payload);
+
+  try {
+    const result = await resend.emails.send(payload);
+    if (result?.error) {
+      throw new Error(result.error.message || 'Resend devolvio un error al enviar el correo');
+    }
+    return result;
+  } catch (error) {
+    if (!smtpTransporter) {
+      throw error;
+    }
+
+    await enviarConSmtp({ to, subject, html, attachments });
+    return { fallback: 'smtp' };
+  }
 };
 
 // --- Templates ---

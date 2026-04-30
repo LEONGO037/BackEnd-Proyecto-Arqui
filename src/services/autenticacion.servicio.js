@@ -31,7 +31,6 @@ import {
   emailVerificacionCodigo,
   emailActividadSospechosa,
   emailResetPassword,
-  emailResetPasswordCodigo,
 } from "./email.service.js";
 
 const SALT_ROUNDS = 12;
@@ -195,11 +194,11 @@ export const registrarEstudiante = async (datos) => {
     codigo_verificacion_expira: expira,
   });
 
-  enviarEmail({
+  await enviarEmail({
     to: email,
     subject: "Verifica tu correo — College X Nexus",
     html: emailVerificacionCodigo({ nombre, codigo }),
-  }).catch(() => {});
+  });
 
   return {
     mensaje:
@@ -268,44 +267,27 @@ export const cambiarPassword = async (usuarioId, passwordActual, nuevaPassword) 
 
 export const solicitarResetPassword = async (email) => {
   const GENERIC_MSG =
-    "Si el correo existe, recibirás el código en tu correo electrónico.";
+    "Si el correo existe, recibirás instrucciones para restablecer tu contraseña.";
 
   await new Promise((r) => setTimeout(r, 300));
 
   const usuario = await obtenerUsuarioPorEmail(email);
   if (!usuario) return { mensaje: GENERIC_MSG };
 
-  const codigo = generarCodigo6();
-  const codigoHash = hashCodigo(codigo);
-  const expira = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
-
-  await guardarResetToken(usuario.id, codigoHash, expira);
-
-  enviarEmail({
-    to: email,
-    subject: "Código para restablecer contraseña — College X Nexus",
-    html: emailResetPasswordCodigo({ nombre: usuario.nombre, codigo }),
-  }).catch(() => {});
-
-  return { mensaje: GENERIC_MSG };
-};
-
-export const verificarCodigoReset = async (email, codigo) => {
-  if (!email || !codigo) throw new Error("Correo y código son requeridos");
-
-  const codigoHash = hashCodigo(String(codigo).trim());
-  const usuario = await obtenerUsuarioPorResetToken(codigoHash);
-  if (!usuario || usuario.email !== email)
-    throw new Error("Código inválido o expirado");
-
-  // Código correcto: generar token temporal para el paso de nueva contraseña
   const tokenPlano = crypto.randomBytes(32).toString("hex");
   const tokenHash = crypto.createHash("sha256").update(tokenPlano).digest("hex");
-  const expira = new Date(Date.now() + 10 * 60 * 1000); // 10 min para completar el reset
+  const expira = new Date(Date.now() + 60 * 60 * 1000);
 
   await guardarResetToken(usuario.id, tokenHash, expira);
 
-  return { token: tokenPlano };
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${tokenPlano}`;
+  await enviarEmail({
+    to: email,
+    subject: "Restablecer contraseña — College X Nexus",
+    html: emailResetPassword({ resetUrl }),
+  });
+
+  return { mensaje: GENERIC_MSG };
 };
 
 export const resetPassword = async (tokenPlano, nuevaPassword) => {
