@@ -9,6 +9,7 @@ import {
   verificarCodigoReset,
   resetearPassword,
   perfil,
+  reenviarCodigo,
 } from "../controllers/autenticacion.controlador.js";
 import { verificarToken } from "../middlewares/autenticacion.middleware.js";
 
@@ -25,6 +26,7 @@ const loginLimiter = rateLimit({
 router.post("/registrar", registrar);
 router.post("/login", loginLimiter, login);
 router.post("/verificar-codigo", verificarCodigo);
+router.post("/reenviar-codigo", reenviarCodigo);
 router.put("/cambiar-password", verificarToken, cambiarPassword);
 router.post("/solicitar-reset", solicitarReset);
 router.post("/verificar-codigo-reset", verificarCodigoReset);

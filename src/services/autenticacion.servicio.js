@@ -18,6 +18,7 @@ import {
   limpiarResetToken,
   registrarLoginExitoso,
   contarLoginsRecientes,
+  guardarCodigoVerificacion,
 } from "../models/usuario.modelo.js";
 import {
   validarCredencialesLogin,
@@ -213,6 +214,32 @@ export const verificarCodigoEmail = async (email, codigo) => {
   const usuario = await verificarCodigoOTP(email, codigoHash);
   if (!usuario) throw new Error("Código inválido o expirado");
   return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
+};
+
+export const reenviarCodigoVerificacion = async (email) => {
+  const GENERIC_MSG = "Si el correo existe en el sistema, se reenvió el código.";
+  await new Promise((r) => setTimeout(r, 300));
+
+  const usuario = await obtenerUsuarioPorEmail(email);
+  if (!usuario) return { mensaje: GENERIC_MSG };
+
+  if (usuario.email_verificado) {
+    throw new Error("El correo ya está verificado.");
+  }
+
+  const codigo = generarCodigo6();
+  const codigoHash = hashCodigo(codigo);
+  const expira = new Date(Date.now() + 15 * 60 * 1000);
+
+  await guardarCodigoVerificacion(usuario.id, codigoHash, expira);
+
+  enviarEmail({
+    to: email,
+    subject: "Verifica tu correo — College X Nexus",
+    html: emailVerificacionCodigo({ nombre: usuario.nombre, codigo }),
+  }).catch(() => {});
+
+  return { mensaje: GENERIC_MSG };
 };
 
 // ─── CAMBIAR CONTRASEÑA ───────────────────────────────────────────────────────
