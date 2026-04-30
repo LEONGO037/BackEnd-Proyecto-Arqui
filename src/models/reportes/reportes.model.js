@@ -40,7 +40,6 @@ export const obtenerReporteInscripciones = async ({ desde, hasta, curso_id } = {
        u.id                                                        AS estudiante_id,
        u.nombre                                                    AS estudiante_nombre,
        u.apellido_paterno                                          AS estudiante_apellido,
-       u.ci_nit,
        u.email                                                     AS estudiante_email,
 
        -- Curso
@@ -100,7 +99,6 @@ export const obtenerReportePagos = async ({ desde, hasta } = {}) => {
        -- Estudiante
        u.nombre                              AS estudiante_nombre,
        u.apellido_paterno                    AS estudiante_apellido,
-       u.ci_nit,
        u.email                              AS estudiante_email,
 
        -- Curso

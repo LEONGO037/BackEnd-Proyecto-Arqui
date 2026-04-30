@@ -11,26 +11,17 @@ export const registrarEstudiante = async (req, res) => {
         nombre,
         apellido_paterno,
         apellido_materno,
-        ci_nit,
         email,
-        telefono,
-        direccion
     } = req.body;
 
     // 1. Validación básica de campos requeridos
-    if (!usuario_id || !nombre || !apellido_paterno || !ci_nit || !email) {
+    if (!usuario_id || !nombre || !apellido_paterno || !email) {
         return res.status(400).json({
-            error: "Los campos usuario_id (admin), nombre, apellido_paterno, ci_nit y email son obligatorios."
+            error: "Los campos usuario_id (admin), nombre, apellido_paterno y email son obligatorios."
         });
     }
 
-    // 2. Validación específica de CI_NIT (7-11 caracteres, solo números y letras)
-    const ciRegex = /^[a-zA-Z0-9]{7,11}$/;
-    if (!ciRegex.test(ci_nit)) {
-        return res.status(400).json({
-            error: "El CI_NIT debe tener entre 7 y 11 caracteres y solo puede contener letras y números (sin caracteres especiales)."
-        });
-    }
+    // 2. (Validación de CI_NIT eliminada ya que la columna no existe)
 
     // 3. Validación de formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -39,19 +30,20 @@ export const registrarEstudiante = async (req, res) => {
     }
 
     try {
-        // 4. Verificar si el usuario ya existe por Email o CI
-        const usuarioExistente = await buscarUsuarioPorEmailOCI(email, ci_nit);
+        // 4. Verificar si el usuario ya existe por Email
+        const usuarioExistente = await buscarUsuarioPorEmailOCI(email);
         if (usuarioExistente) {
             return res.status(409).json({
-                error: "El estudiante ya se encuentra registrado con ese Email o CI_NIT."
+                error: "El estudiante ya se encuentra registrado con ese Email."
             });
         }
 
         // 5. Definir ID de rol (2 para ESTUDIANTE)
         const ROL_ESTUDIANTE_ID = 2;
 
-        // 6. Generar contraseña automática: nombre.apellido.ci_nit
-        const password_plano = `${nombre}.${apellido_paterno}.${ci_nit}`.toLowerCase().replace(/\s+/g, '');
+        // 6. Generar contraseña automática: nombre.apellido.emailPrefix
+        const emailPrefix = email.split('@')[0];
+        const password_plano = `${nombre}.${apellido_paterno}.${emailPrefix}`.toLowerCase().replace(/\s+/g, '');
         const password_hash = await bcrypt.hash(password_plano, 10);
 
         // 7. Crear el estudiante (usuario) en la BD
@@ -59,11 +51,8 @@ export const registrarEstudiante = async (req, res) => {
             nombre,
             apellido_paterno,
             apellido_materno,
-            ci_nit,
             email,
             password_hash,
-            telefono,
-            direccion,
             rol_id: ROL_ESTUDIANTE_ID
         });
 
@@ -74,7 +63,7 @@ export const registrarEstudiante = async (req, res) => {
             tabla_afectada: "usuarios",
             registro_id: nuevoEstudiante.id,
             detalle: {
-                mensaje: "Registro de nuevo estudiante con validación de CI",
+                mensaje: "Registro de nuevo estudiante (sin CI/Tel/Dir)",
                 estudiante_email: nuevoEstudiante.email,
                 admin_id: usuario_id
             }
@@ -87,8 +76,7 @@ export const registrarEstudiante = async (req, res) => {
             data: {
                 id: nuevoEstudiante.id,
                 nombre: nuevoEstudiante.nombre,
-                email: nuevoEstudiante.email,
-                ci_nit: nuevoEstudiante.ci_nit
+                email: nuevoEstudiante.email
             }
         });
 

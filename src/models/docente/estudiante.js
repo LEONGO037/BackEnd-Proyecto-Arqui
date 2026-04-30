@@ -8,7 +8,6 @@ export const obtenerEstudiantesCurso = async (docente_id, curso_id) => {
         u.nombre,
         u.apellido_paterno,
         u.apellido_materno,
-        u.ci_nit,
         ec.nota_final
      FROM estudiante_curso ec
      JOIN usuarios u ON u.id = ec.estudiante_id
