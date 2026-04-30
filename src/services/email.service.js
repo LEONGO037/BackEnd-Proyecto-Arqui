@@ -1,15 +1,22 @@
-import nodemailer from 'nodemailer';
+import dns from 'dns';
 
-// Configuración de Nodemailer (SMTP)
-// Se recomienda usar variables de entorno para la configuración
+// Configuración de Nodemailer (SMTP) optimizada para producción
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || '465'),
-  secure: process.env.EMAIL_PORT === '465' || !process.env.EMAIL_PORT, // true para 465, false para otros
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: process.env.EMAIL_PORT === '465', // false para 587 (STARTTLS)
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD,
   },
+  // Forzar IPv4 para evitar el error ENETUNREACH en ciertos entornos (Docker/Render/Railway)
+  dnsLookup: (hostname, options, callback) => {
+    dns.lookup(hostname, { family: 4 }, callback);
+  },
+  tls: {
+    // Evita errores de certificado que pueden ocurrir en entornos de red específicos
+    rejectUnauthorized: false
+  }
 });
 
 const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USER}>`;
