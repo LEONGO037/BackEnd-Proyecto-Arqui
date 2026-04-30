@@ -16,6 +16,7 @@ import {
   getUsuarios,
   postDesbloquearUsuario,
   deleteUsuario,
+  postCrearUsuario,
 } from "../controllers/rbac.controlador.js";
 
 const router = express.Router();
@@ -37,6 +38,7 @@ router.delete("/roles/:id/permisos/:pid",  verificarPermiso("roles:gestionar"), 
 
 // Users — all managed under usuarios:gestionar
 router.get("/usuarios",                    verificarPermiso("usuarios:gestionar"), getUsuarios);
+router.post("/usuarios",                   verificarPermiso("usuarios:gestionar"), postCrearUsuario);
 router.get("/usuarios/:id/rol",            verificarPermiso("usuarios:gestionar"), getUsuarioRol);
 router.put("/usuarios/:id/rol",            verificarPermiso("usuarios:gestionar"), putUsuarioRol);
 router.post("/usuarios/:id/desbloquear",   verificarPermiso("usuarios:gestionar"), postDesbloquearUsuario);

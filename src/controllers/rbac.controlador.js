@@ -1,3 +1,5 @@
+import bcrypt from "bcrypt";
+import crypto from "crypto";
 import {
   getAllRoles,
   getAllPermisos,
@@ -13,7 +15,8 @@ import {
   getAllUsuariosConRol,
   deleteUsuarioById,
 } from "../models/permiso.modelo.js";
-import { desbloquearUsuario } from "../models/usuario.modelo.js";
+import { desbloquearUsuario, crearUsuarioConVerificacion } from "../models/usuario.modelo.js";
+import { enviarEmail } from "../services/email.service.js";
 
 export const getRoles = async (req, res, next) => {
   try {
@@ -126,5 +129,40 @@ export const deleteUsuario = async (req, res, next) => {
     }
     await deleteUsuarioById(req.params.id);
     res.json({ mensaje: "Usuario eliminado correctamente" });
+  } catch (err) { next(err); }
+};
+
+const generarPasswordDefault = () => {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!";
+  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+};
+
+export const postCrearUsuario = async (req, res, next) => {
+  try {
+    const { nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion, email, rol_id } = req.body;
+    if (!nombre || !apellido_paterno || !email || !rol_id) {
+      return res.status(400).json({ error: "nombre, apellido_paterno, email y rol_id son requeridos" });
+    }
+
+    const passwordDefault = generarPasswordDefault();
+    const password_hash = await bcrypt.hash(passwordDefault, 12);
+    const codigo_verificacion = crypto.createHash("sha256").update(crypto.randomBytes(32).toString("hex")).digest("hex");
+    const codigo_verificacion_expira = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+    const usuario = await crearUsuarioConVerificacion({
+      nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion, email,
+      password_hash, rol_id, codigo_verificacion, codigo_verificacion_expira,
+      debe_cambiar_password: true,
+    });
+
+    enviarEmail({
+      to: email,
+      subject: "Tu cuenta en College X Nexus",
+      html: `<p>Hola <b>${nombre}</b>,</p>
+             <p>Tu cuenta ha sido creada. Tu contraseña temporal es: <b>${passwordDefault}</b></p>
+             <p>Deberás cambiarla al iniciar sesión por primera vez.</p>`,
+    }).catch(() => {});
+
+    res.status(201).json({ mensaje: "Usuario creado correctamente", usuario });
   } catch (err) { next(err); }
 };
