@@ -75,6 +75,21 @@ export const emailActividadSospechosa = ({ nombre, email, fecha }) => `
   </div>
 `;
 
+export const emailResetPasswordCodigo = ({ nombre, codigo }) => `
+  <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f9fafb;border-radius:12px">
+    <h2 style="color:#003366;margin-bottom:0.5rem">College X Nexus</h2>
+    <h3 style="color:#1e293b">Restablecer contraseña</h3>
+    <p>Hola <strong>${nombre}</strong>, recibimos una solicitud para restablecer tu contraseña.</p>
+    <p>Tu código de verificación es (válido por <strong>15 minutos</strong>):</p>
+    <div style="text-align:center;margin:1.5rem 0;font-size:2.5rem;font-weight:800;letter-spacing:0.5rem;color:#003366;background:#e8f0fb;padding:1.25rem;border-radius:12px">
+      ${codigo}
+    </div>
+    <p style="color:#64748b;font-size:0.85rem">Ingresa este código en la pantalla de restablecimiento.</p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0"/>
+    <p style="color:#94a3b8;font-size:0.8rem">Si no solicitaste esto, ignora este correo. Tu contraseña no cambiará.</p>
+  </div>
+`;
+
 export const emailResetPassword = ({ resetUrl }) => `
   <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f9fafb;border-radius:12px">
     <h2 style="color:#003366;margin-bottom:0.5rem">College X Nexus</h2>
