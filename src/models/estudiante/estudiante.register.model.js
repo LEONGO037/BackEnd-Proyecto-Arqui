@@ -19,8 +19,8 @@ export const crearEstudiante = async (datosEstudiante) => {
 
     const query = `
     INSERT INTO public.usuarios 
-    (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id, activo)
-    VALUES ($1, $2, $3, $4, $5, $6, true)
+    (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id, activo, email_verificado)
+    VALUES ($1, $2, $3, $4, $5, $6, true, true)
     RETURNING id, nombre, apellido_paterno, email, rol_id;
   `;
 

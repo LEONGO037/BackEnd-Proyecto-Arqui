@@ -17,9 +17,27 @@ const hashCodigo = (codigo) =>
 const generarCodigo6 = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-const generarPasswordDefault = () => {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$!";
-  return Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+export const generarPasswordDefault = () => {
+  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  const lower = "abcdefghijklmnopqrstuvwxyz";
+  const numbers = "0123456789";
+  const special = "@#$!%*?&_-";
+  const allChars = upper + lower + numbers + special;
+
+  // Asegurar al menos uno de cada tipo
+  let password = "";
+  password += upper[Math.floor(Math.random() * upper.length)];
+  password += lower[Math.floor(Math.random() * lower.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += special[Math.floor(Math.random() * special.length)];
+
+  // Rellenar hasta 12
+  for (let i = 4; i < 12; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+
+  // Mezclar los caracteres
+  return password.split('').sort(() => 0.5 - Math.random()).join('');
 };
 
 export const registrarDocente = async (datos) => {
@@ -29,16 +47,10 @@ export const registrarDocente = async (datos) => {
   const passwordDefault = generarPasswordDefault();
   const passwordHash = await bcrypt.hash(passwordDefault, 12);
 
-  const codigo = generarCodigo6();
-  const codigoHash = hashCodigo(codigo);
-  const expira = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h para que el admin tenga tiempo
-
   const docente = await crearDocente({
     ...datos,
     password_hash: passwordHash,
     rol_id: rol.id,
-    codigo_verificacion: codigoHash,
-    codigo_verificacion_expira: expira,
   });
 
   // Enviar correo con OTP + contraseña temporal
@@ -48,7 +60,6 @@ export const registrarDocente = async (datos) => {
     html: emailDocenteBienvenida({
       nombre: datos.nombre,
       email: datos.email,
-      codigo,
       passwordDefault,
     }),
   }).catch(() => {});

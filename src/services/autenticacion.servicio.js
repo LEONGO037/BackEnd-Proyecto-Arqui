@@ -88,10 +88,10 @@ export const iniciarSesion = async (email, password) => {
     throw new Error("Credenciales inválidas");
   }
 
-  // Contraseña vencida (90 días)
-  const diasDesdeCambio =
-    (Date.now() - new Date(usuario.password_cambiado_en)) / 86400000;
-  if (diasDesdeCambio > 90) {
+  const diasDesdeCambio = usuario.password_cambiado_en
+    ? (Date.now() - new Date(usuario.password_cambiado_en)) / 86400000
+    : 0;
+  if (usuario.password_cambiado_en && diasDesdeCambio > 90) {
     // Devolvemos token pero marcamos expirada
     const permisos = await getRolePermissions(usuario.rol_id);
     const token = firmarToken({ ...usuario, debe_cambiar_password: true }, permisos);

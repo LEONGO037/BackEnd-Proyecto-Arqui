@@ -1,6 +1,8 @@
 import bcrypt from "bcrypt";
 import { crearEstudiante, buscarUsuarioPorEmailOCI } from "../../models/estudiante/estudiante.register.model.js";
 import { registrarAuditoria } from "../../services/auditoria.service.js";
+import { generarPasswordDefault } from "../../services/administrador.docente/docente.service.js";
+import { enviarEmail, emailEstudianteBienvenidaAdmin } from "../../services/email.service.js";
 
 /**
  * Controlador para el registro de estudiantes.
@@ -41,10 +43,9 @@ export const registrarEstudiante = async (req, res) => {
         // 5. Definir ID de rol (2 para ESTUDIANTE)
         const ROL_ESTUDIANTE_ID = 2;
 
-        // 6. Generar contraseña automática: nombre.apellido.emailPrefix
-        const emailPrefix = email.split('@')[0];
-        const password_plano = `${nombre}.${apellido_paterno}.${emailPrefix}`.toLowerCase().replace(/\s+/g, '');
-        const password_hash = await bcrypt.hash(password_plano, 10);
+        // 6. Generar contraseña automática robusta de 12 caracteres
+        const password_plano = generarPasswordDefault();
+        const password_hash = await bcrypt.hash(password_plano, 12);
 
         // 7. Crear el estudiante (usuario) en la BD
         const nuevoEstudiante = await crearEstudiante({
@@ -63,11 +64,22 @@ export const registrarEstudiante = async (req, res) => {
             tabla_afectada: "usuarios",
             registro_id: nuevoEstudiante.id,
             detalle: {
-                mensaje: "Registro de nuevo estudiante (sin CI/Tel/Dir)",
+                mensaje: "Registro de nuevo estudiante con password aleatorio",
                 estudiante_email: nuevoEstudiante.email,
                 admin_id: usuario_id
             }
         });
+
+        // 9. Enviar correo de bienvenida con la contraseña
+        enviarEmail({
+            to: email,
+            subject: "Tu cuenta de estudiante — College X Nexus",
+            html: emailEstudianteBienvenidaAdmin({
+                nombre,
+                email,
+                passwordDefault: password_plano
+            })
+        }).catch(err => console.error("Error al enviar correo a estudiante:", err));
 
         // 9. Respuesta exitosa
         return res.status(201).json({

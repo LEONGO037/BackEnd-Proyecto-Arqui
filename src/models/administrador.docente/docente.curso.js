@@ -15,7 +15,7 @@ export const asignarCurso = async (usuario_id, curso_id) => {
     // 2. Insertamos la nueva asignación
     const resultado = await client.query(
       `INSERT INTO docente_curso (usuario_id, curso_id, estado)
-       VALUES ($1, $2, 'activo')
+       VALUES ($1, $2, 'NO_ACTIVO')
        RETURNING *`,
       [usuario_id, curso_id]
     );
