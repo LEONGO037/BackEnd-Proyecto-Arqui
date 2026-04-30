@@ -23,7 +23,7 @@ const router = express.Router();
 router.use(verificarToken);
 
 // Roles — all managed under roles:gestionar
-router.get("/roles",                       verificarPermiso("roles:gestionar"),    getRoles);
+router.get("/roles",                       verificarPermiso("roles:gestionar", "usuarios:gestionar"),    getRoles);
 router.post("/roles",                      verificarPermiso("roles:gestionar"),    postRol);
 router.put("/roles/:id",                   verificarPermiso("roles:gestionar"),    putRol);
 router.delete("/roles/:id",                verificarPermiso("roles:gestionar"),    deleteRol);
