@@ -40,7 +40,7 @@ export const login = async (req, res, next) => {
     const msg = error.message || "Credenciales inválidas";
     const status =
       msg.includes("bloqueada") ? 423 :
-      msg.includes("verificar") ? 403 : 401;
+        msg.includes("verificar") ? 403 : 401;
     res.status(status).json({ error: msg });
   }
 };
