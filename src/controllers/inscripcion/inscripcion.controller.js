@@ -8,19 +8,15 @@ import {
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
 
 // GET /api/inscripciones/mis-inscripciones
-export const getMisInscripciones = async (req, res) => {
+export const getMisInscripciones = async (req, res, next) => {
   try {
     const data = await obtenerCursosDeEstudiante(req.usuario.id);
-
-    // Devolver solo los curso_id para que el frontend sepa cuáles están marcados
     res.json(data.map(r => ({ curso_id: r.curso_id })));
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
 
 // POST /api/inscripciones/inscribir  — body: { curso_id }
-export const postInscribir = async (req, res) => {
+export const postInscribir = async (req, res, next) => {
   try {
     const { curso_id } = req.body;
     if (!curso_id) return res.status(400).json({ error: "curso_id es requerido" });
@@ -39,13 +35,11 @@ export const postInscribir = async (req, res) => {
     });
 
     res.status(201).json({ mensaje: "Inscripción exitosa", data: resultado });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
 
 // DELETE /api/inscripciones/desinscribir/:cursoId
-export const deleteDesinscribir = async (req, res) => {
+export const deleteDesinscribir = async (req, res, next) => {
   try {
     const cursoId = Number(req.params.cursoId);
     await desinscribirEstudianteDeCurso(req.usuario.id, cursoId);
@@ -54,16 +48,11 @@ export const deleteDesinscribir = async (req, res) => {
       usuario_id: req.usuario.id,
       accion: "DELETE",
       tabla_afectada: "estudiante_curso",
-      detalle: {
-        evento: "DESINSCRIPCION_CURSO",
-        curso_id: cursoId,
-      },
+      detalle: { evento: "DESINSCRIPCION_CURSO", curso_id: cursoId },
     });
 
     res.json({ mensaje: "Baja exitosa" });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
 
 // ============================================================================
@@ -76,12 +65,9 @@ export const deleteDesinscribir = async (req, res) => {
  * panel de gestión de inscripciones en el frontend). Sólo accesible para
  * usuarios con rol ADMIN.
  */
-export const getResumenCursos = async (req, res) => {
+export const getResumenCursos = async (req, res, next) => {
   try {
     const cursos = await obtenerResumenCursosConInscritos();
-
     res.json(cursos);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };

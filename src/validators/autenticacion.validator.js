@@ -1,5 +1,5 @@
 const EMAIL_UCB_REGEX = /^[A-Z0-9._%+-]+@ucb\.edu\.bo$/i;
-const PASSWORD_STRONG_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
+const PASSWORD_STRONG_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&_\-#])[A-Za-z\d@$!%*?&_\-#]{12,}$/;
 
 export const validarCorreoInstitucional = (email) => {
   const correo = String(email || '').trim();
@@ -11,7 +11,7 @@ export const validarCorreoInstitucional = (email) => {
 export const validarPasswordFuerte = (password) => {
   const passwordPlano = String(password || '');
   if (!PASSWORD_STRONG_REGEX.test(passwordPlano)) {
-    throw new Error('La contraseña debe tener al menos 8 caracteres, mayúscula, minúscula, número y carácter especial');
+    throw new Error('La contraseña debe tener mínimo 12 caracteres, mayúscula, minúscula, número y carácter especial (@$!%*?&_-#)');
   }
 };
 

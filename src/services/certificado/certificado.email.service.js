@@ -1,63 +1,47 @@
-import nodemailer from 'nodemailer';
+import { enviarEmail } from '../email.service.js';
 import { generarCertificadoPDF } from './certificado.pdf.service.js';
-
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-});
 
 const NOTA_MINIMA_APROBACION = 51;
 
-/**
- * Envía el correo correspondiente al resultado final del estudiante.
- * Si aprueba, adjunta el certificado en PDF. Si reprueba, notifica sin adjunto.
- *
- * @param {string} email - Correo del estudiante
- * @param {string} nombreCompleto - Nombre completo del estudiante
- * @param {string} cursoNombre - Nombre del curso
- * @param {number} nota - Nota final registrada
- */
 export const enviarNotificacionResultado = async (email, nombreCompleto, cursoNombre, nota) => {
   const aprobo = nota >= NOTA_MINIMA_APROBACION;
 
   if (aprobo) {
     const pdfBuffer = await generarCertificadoPDF({ nombreCompleto, cursoNombre, nota });
-
-    const mailOptions = {
-      from: `"X College Nexus" <${process.env.EMAIL_USER}>`,
+    await enviarEmail({
       to: email,
       subject: `¡Felicitaciones! Aprobaste el curso: ${cursoNombre}`,
-      text:
-        `Hola ${nombreCompleto},\n\n` +
-        `Nos complace informarte que has aprobado el curso "${cursoNombre}" con una nota final de ${nota}/100.\n\n` +
-        `Adjunto encontrarás tu certificado de aprobación.\n\n` +
-        `¡Felicitaciones por tu esfuerzo!\n\nX College Nexus`,
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem">
+          <h2 style="color:#003366">College X Nexus</h2>
+          <p>Hola <strong>${nombreCompleto}</strong>,</p>
+          <p>Nos complace informarte que aprobaste el curso <strong>"${cursoNombre}"</strong>
+             con una nota final de <strong>${nota}/100</strong>.</p>
+          <p>Adjunto encontrarás tu certificado de aprobación.</p>
+          <p>¡Felicitaciones por tu esfuerzo!</p>
+        </div>
+      `,
       attachments: [
         {
           filename: `certificado_${cursoNombre.replace(/\s+/g, '_')}.pdf`,
           content: pdfBuffer,
-          contentType: 'application/pdf',
         },
       ],
-    };
-
-    return await transporter.sendMail(mailOptions);
+    });
   } else {
-    const mailOptions = {
-      from: `"X College Nexus" <${process.env.EMAIL_USER}>`,
+    await enviarEmail({
       to: email,
       subject: `Resultado final: ${cursoNombre}`,
-      text:
-        `Hola ${nombreCompleto},\n\n` +
-        `Te informamos que tu nota final en el curso "${cursoNombre}" fue de ${nota}/100, ` +
-        `lo cual no alcanza la nota mínima de aprobación (${NOTA_MINIMA_APROBACION}/100).\n\n` +
-        `Si tienes consultas sobre tu calificación, comunícate con tu docente.\n\n` +
-        `Atentamente,\nX College Nexus`,
-    };
-
-    return await transporter.sendMail(mailOptions);
+      html: `
+        <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem">
+          <h2 style="color:#003366">College X Nexus</h2>
+          <p>Hola <strong>${nombreCompleto}</strong>,</p>
+          <p>Tu nota final en el curso <strong>"${cursoNombre}"</strong> fue de
+             <strong>${nota}/100</strong>, que no alcanza la nota mínima
+             de aprobación (${NOTA_MINIMA_APROBACION}/100).</p>
+          <p>Si tienes consultas sobre tu calificación, comunícate con tu docente.</p>
+        </div>
+      `,
+    });
   }
 };

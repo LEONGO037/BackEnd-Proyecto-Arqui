@@ -1,15 +1,40 @@
-export const verificarRol = (rolPermitido) => {
+import { getRolePermissions } from "../models/permiso.modelo.js";
 
+// Backward-compatible role check (kept for docente/estudiante routes)
+export const verificarRol = (...roles) => {
+  const permitidos = roles.flat();
   return (req, res, next) => {
-
-    if (req.usuario.rol !== rolPermitido) {
+    if (!permitidos.includes(req.usuario?.rol)) {
       return res.status(403).json({
-        error: "No tiene permisos para acceder a esta ruta",
-        rolRequerido: rolPermitido,
-        tuRol: req.usuario.rol
+        error: "Acceso denegado",
+        rol_requerido: permitidos,
+        tu_rol: req.usuario?.rol,
       });
     }
-
     next();
   };
+};
+
+// Permission-based middleware.
+// Always queries the DB so that permission changes take effect immediately,
+// without requiring the user to re-login.
+export const verificarPermiso = (permiso) => async (req, res, next) => {
+  try {
+    const rolId = req.usuario?.rol_id;
+    if (!rolId) {
+      return res.status(403).json({ error: "Acceso denegado", detalle: "rol_id no encontrado en el token" });
+    }
+
+    const permisos = await getRolePermissions(rolId);
+
+    if (!permisos.includes(permiso)) {
+      return res.status(403).json({
+        error: "Acceso denegado",
+        permiso_requerido: permiso,
+      });
+    }
+    next();
+  } catch {
+    res.status(500).json({ error: "Error al verificar permisos" });
+  }
 };

@@ -56,10 +56,7 @@ export const postCrearOrden = async (req, res) => {
       cantidad: rows.length
     });
 
-  } catch (err) {
-    console.error('Error crear-orden:', err.message);
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
 
 export const postCapturarOrden = async (req, res) => {
@@ -139,36 +136,28 @@ export const postCapturarOrden = async (req, res) => {
       errores: resultadoInscripcion.errores.length > 0 ? resultadoInscripcion.errores : undefined,
     });
 
-  } catch (err) {
-    console.error('Error capturar-orden:', err.message);
-    res.status(400).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
 
-export const getTodosLosPagos = async (req, res) => {
+export const getTodosLosPagos = async (req, res, next) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const offset = parseInt(req.query.offset) || 0;
-
     const pagos = await PagosModel.obtenerTodosLosPagos(limit, offset);
-
     res.json(pagos);
-
-  } catch (err) {
-    console.error('Error obtener-todos-los-pagos:', err.message);
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
 
-export const getPagosUsuario = async (req, res) => {
+export const getPagosUsuario = async (req, res, next) => {
   try {
-    const estudianteId = req.usuario.id;
-    const pagos = await PagosModel.obtenerPagosPorUsuario(estudianteId);
-
+    const targetId = req.params.id ? parseInt(req.params.id) : req.usuario.id;
+    const { getRolePermissions } = await import("../../models/permiso.modelo.js");
+    const permisos = await getRolePermissions(req.usuario.rol_id);
+    const esAdmin = permisos.includes("pagos:ver");
+    if (!esAdmin && targetId !== req.usuario.id) {
+      return res.status(403).json({ error: "No puede acceder a datos de otro usuario" });
+    }
+    const pagos = await PagosModel.obtenerPagosPorUsuario(targetId);
     res.json(pagos);
-
-  } catch (err) {
-    console.error('Error obtener-pagos-usuario:', err.message);
-    res.status(500).json({ error: err.message });
-  }
+  } catch (err) { next(err); }
 };
