@@ -180,8 +180,7 @@ export const generarPDFInscripciones = (datos, resumen) => {
       // Columnas ajustadas al ancho landscape (741 usable)
       const COLS = [
         { key: "fecha",   label: "Fecha",           x: 50,   w: 60  },
-        { key: "nombre",  label: "Estudiante",       x: 113,  w: 145 },
-        { key: "ci",      label: "CI/NIT",           x: 261,  w: 65  },
+        { key: "nombre",  label: "Estudiante",       x: 113,  w: 210 },
         { key: "curso",   label: "Curso",            x: 329,  w: 150 },
         { key: "costo",   label: "Costo (Bs)",       x: 482,  w: 60, align: "right" },
         { key: "estado",  label: "Estado Académico", x: 545,  w: 80 },
@@ -204,8 +203,7 @@ export const generarPDFInscripciones = (datos, resumen) => {
 
         y = dibujarFila(doc, y, [
           { x: 50,  w: 60,  text: formatFecha(row.fecha_registro) },
-          { x: 113, w: 145, text: `${row.estudiante_nombre} ${row.estudiante_apellido}` },
-          { x: 261, w: 65,  text: row.ci_nit || "—" },
+          { x: 113, w: 210, text: `${row.estudiante_nombre} ${row.estudiante_apellido}` },
           { x: 329, w: 150, text: row.curso_nombre },
           { x: 482, w: 60,  text: formatMonto(row.costo_bs), align: "right" },
           { x: 545, w: 80,  text: row.estado_academico || "—" },
@@ -250,8 +248,7 @@ export const generarPDFPagos = (datos, resumen) => {
       // ── Tabla ─────────────────────────────────────────────────────────────
       const COLS = [
         { label: "Fecha Pago",        x: 50,   w: 65 },
-        { label: "Estudiante",        x: 118,  w: 155 },
-        { label: "CI/NIT",            x: 276,  w: 65 },
+        { label: "Estudiante",        x: 118,  w: 220 },
         { label: "Curso",             x: 344,  w: 155 },
         { label: "Monto (Bs)",        x: 502,  w: 60,  align: "right" },
         { label: "Monto (USD)",       x: 565,  w: 55,  align: "right" },
@@ -274,8 +271,7 @@ export const generarPDFPagos = (datos, resumen) => {
 
         y = dibujarFila(doc, y, [
           { x: 50,  w: 65,  text: formatFecha(row.fecha_pago) },
-          { x: 118, w: 155, text: `${row.estudiante_nombre} ${row.estudiante_apellido}` },
-          { x: 276, w: 65,  text: row.ci_nit || "—" },
+          { x: 118, w: 220, text: `${row.estudiante_nombre} ${row.estudiante_apellido}` },
           { x: 344, w: 155, text: row.curso_nombre },
           { x: 502, w: 60,  text: formatMonto(row.monto_bs), align: "right" },
           { x: 565, w: 55,  text: formatMonto(row.monto_usd), align: "right" },

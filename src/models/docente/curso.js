@@ -70,7 +70,6 @@ export const obtenerEstudiantesPorCurso = async (usuario_id, curso_id) => {
         ec.id,
         u.id as estudiante_id,
         CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', COALESCE(u.apellido_materno, '')) as nombre,
-        u.ci_nit as ci,
         ec.asistencia_porcentaje as asistencia,
         ec.nota_final as nota_final,
         ec.estado_academico as estado

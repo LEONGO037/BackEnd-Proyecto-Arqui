@@ -18,16 +18,16 @@ export const obtenerUsuarioPorEmail = async (email) => {
 
 export const crearUsuario = async (datosUsuario) => {
   const {
-    nombre, apellido_paterno, apellido_materno, ci_nit,
-    telefono, direccion, email, password_hash, rol_id
+    nombre, apellido_paterno, apellido_materno,
+    email, password_hash, rol_id
   } = datosUsuario;
 
   const resultado = await pool.query(
     `INSERT INTO usuarios
-    (nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion, email, password_hash, rol_id)
-    VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id)
+    VALUES ($1,$2,$3,$4,$5,$6)
     RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
-    [nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion, email, password_hash, rol_id]
+    [nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id]
   );
   return resultado.rows[0];
 };
@@ -114,22 +114,22 @@ export const insertarHistorialPassword = async (usuarioId, passwordHash) => {
 
 export const crearUsuarioConVerificacion = async (datosUsuario) => {
   const {
-    nombre, apellido_paterno, apellido_materno, ci_nit,
-    telefono, direccion, email, password_hash, rol_id,
+    nombre, apellido_paterno, apellido_materno,
+    email, password_hash, rol_id,
     codigo_verificacion, codigo_verificacion_expira,
     debe_cambiar_password = false,
   } = datosUsuario;
 
   const resultado = await pool.query(
     `INSERT INTO usuarios
-     (nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion,
+     (nombre, apellido_paterno, apellido_materno,
       email, password_hash, rol_id, email_verificado,
       codigo_verificacion, codigo_verificacion_expira, debe_cambiar_password)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,FALSE,$10,$11,$12)
+     VALUES ($1,$2,$3,$4,$5,$6,FALSE,$7,$8,$9)
      RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
     [
-      nombre, apellido_paterno, apellido_materno, ci_nit,
-      telefono, direccion, email, password_hash, rol_id,
+      nombre, apellido_paterno, apellido_materno,
+      email, password_hash, rol_id,
       codigo_verificacion, codigo_verificacion_expira, debe_cambiar_password,
     ]
   );

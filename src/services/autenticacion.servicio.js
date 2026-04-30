@@ -164,7 +164,7 @@ export const iniciarSesion = async (email, password) => {
 export const registrarEstudiante = async (datos) => {
   const {
     nombre, apellido_paterno, apellido_materno,
-    ci_nit, telefono, direccion, email, password,
+    email, password,
   } = datos;
 
   validarRegistroEstudiante({ nombre, apellido_paterno, email, password });
@@ -185,9 +185,6 @@ export const registrarEstudiante = async (datos) => {
     nombre,
     apellido_paterno,
     apellido_materno: apellido_materno || "",
-    ci_nit: ci_nit || null,
-    telefono: telefono || null,
-    direccion: direccion || null,
     email,
     password_hash: passwordEncriptado,
     rol_id: rol.id,

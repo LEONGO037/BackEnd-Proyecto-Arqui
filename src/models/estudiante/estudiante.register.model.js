@@ -12,18 +12,15 @@ export const crearEstudiante = async (datosEstudiante) => {
         nombre,
         apellido_paterno,
         apellido_materno,
-        ci_nit,
         email,
         password_hash,
-        telefono,
-        direccion,
         rol_id
     } = datosEstudiante;
 
     const query = `
     INSERT INTO public.usuarios 
-    (nombre, apellido_paterno, apellido_materno, ci_nit, email, password_hash, telefono, direccion, rol_id, activo)
-    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, true)
+    (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id, activo)
+    VALUES ($1, $2, $3, $4, $5, $6, true)
     RETURNING id, nombre, apellido_paterno, email, rol_id;
   `;
 
@@ -31,11 +28,8 @@ export const crearEstudiante = async (datosEstudiante) => {
         nombre,
         apellido_paterno,
         apellido_materno,
-        ci_nit,
         email,
         password_hash,
-        telefono,
-        direccion,
         rol_id
     ];
 
@@ -49,20 +43,19 @@ export const crearEstudiante = async (datosEstudiante) => {
 };
 
 /**
- * Busca un usuario por su email o su CI_NIT.
+ * Busca un usuario por su email.
  * Utilizado para validación previa al registro.
  * 
  * @param {string} email 
- * @param {string} ci_nit 
  * @returns {Promise<Object|null>} El usuario encontrado o null.
  */
-export const buscarUsuarioPorEmailOCI = async (email, ci_nit) => {
+export const buscarUsuarioPorEmailOCI = async (email) => {
     const query = `
-    SELECT id, email, ci_nit 
+    SELECT id, email 
     FROM public.usuarios 
-    WHERE email = $1 OR ci_nit = $2
+    WHERE email = $1
     LIMIT 1;
   `;
-    const { rows } = await pool.query(query, [email, ci_nit]);
+    const { rows } = await pool.query(query, [email]);
     return rows[0] || null;
 };
