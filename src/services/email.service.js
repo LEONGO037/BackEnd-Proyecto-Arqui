@@ -1,64 +1,47 @@
 import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
 
-const resend = new Resend(process.env.EMAIL_RESEND_API_KEY);
+// Configuración de Nodemailer (SMTP)
+// Se recomienda usar variables de entorno para la configuración
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || '465'),
+  secure: process.env.EMAIL_PORT === '465' || !process.env.EMAIL_PORT, // true para 465, false para otros
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
 
-const FROM = process.env.EMAIL_FROM || 'College X Nexus <onboarding@resend.dev>';
+const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USER}>`;
 
-const smtpTransporter = process.env.EMAIL_USER && process.env.EMAIL_PASS
-  ? nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  })
-  : null;
-
-const buildSmtpFrom = () => {
-  if (process.env.EMAIL_USER) {
-    return `College X Nexus <${process.env.EMAIL_USER}>`;
-  }
-  return FROM;
-};
-
-const enviarConSmtp = async ({ to, subject, html, attachments }) => {
-  if (!smtpTransporter) {
-    throw new Error('No hay configuracion SMTP de respaldo');
-  }
-
-  const destino = Array.isArray(to) ? to.join(', ') : to;
-  await smtpTransporter.sendMail({
-    from: buildSmtpFrom(),
-    to: destino,
-    subject,
-    html,
-    attachments,
-  });
-};
-
+/**
+ * Envía un correo electrónico utilizando Nodemailer (SMTP)
+ * @param {Object} options - Opciones del correo
+ * @param {string|string[]} options.to - Destinatario(s)
+ * @param {string} options.subject - Asunto
+ * @param {string} options.html - Contenido HTML
+ * @param {Array} [options.attachments] - Adjuntos (opcional)
+ */
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
-  const payload = {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('⚠️ Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
+    throw new Error('Servicio de correo no configurado');
+  }
+
+  const mailOptions = {
     from: FROM,
-    to: Array.isArray(to) ? to : [to],
+    to: Array.isArray(to) ? to.join(', ') : to,
     subject,
     html,
+    attachments: attachments || [],
   };
-  if (attachments?.length) payload.attachments = attachments;
 
   try {
-    const result = await resend.emails.send(payload);
-    if (result?.error) {
-      throw new Error(result.error.message || 'Resend devolvio un error al enviar el correo');
-    }
-    return result;
+    const info = await transporter.sendMail(mailOptions);
+    return info;
   } catch (error) {
-    if (!smtpTransporter) {
-      throw error;
-    }
-
-    await enviarConSmtp({ to, subject, html, attachments });
-    return { fallback: 'smtp' };
+    console.error('❌ Error al enviar correo con Nodemailer:', error.message);
+    throw error;
   }
 };
 
