@@ -194,11 +194,11 @@ export const registrarEstudiante = async (datos) => {
     codigo_verificacion_expira: expira,
   });
 
-  enviarEmail({
+  await enviarEmail({
     to: email,
     subject: "Verifica tu correo — College X Nexus",
     html: emailVerificacionCodigo({ nombre, codigo }),
-  }).catch(() => {});
+  });
 
   return {
     mensaje:
@@ -281,11 +281,11 @@ export const solicitarResetPassword = async (email) => {
   await guardarResetToken(usuario.id, tokenHash, expira);
 
   const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${tokenPlano}`;
-  enviarEmail({
+  await enviarEmail({
     to: email,
     subject: "Restablecer contraseña — College X Nexus",
     html: emailResetPassword({ resetUrl }),
-  }).catch(() => {});
+  });
 
   return { mensaje: GENERIC_MSG };
 };

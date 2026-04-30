@@ -86,8 +86,9 @@ export const solicitarReset = async (req, res, next) => {
     if (!email) return res.status(400).json({ error: "Email requerido" });
     const resultado = await solicitarResetPassword(email);
     res.json(resultado);
-  } catch {
-    res.json({ mensaje: "Si el correo existe, recibirás instrucciones para restablecer tu contraseña." });
+  } catch (error) {
+    console.error("Error al solicitar reset de contraseña:", error);
+    res.status(500).json({ error: "No se pudo enviar el correo de restablecimiento. Intenta nuevamente." });
   }
 };
 
