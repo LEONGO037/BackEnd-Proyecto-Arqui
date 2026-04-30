@@ -1,7 +1,7 @@
 // src/routes/tareas/tareas.routes.js
 import express from "express";
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
-import { verificarRol } from "../../middlewares/roles.middleware.js";
+import { verificarPermiso } from "../../middlewares/roles.middleware.js";
 import {
   getTareasPorCurso,
   getTareaPorId,
@@ -25,11 +25,11 @@ router.get("/estudiante/:estudianteCursoId", getCalificacionesEstudiante);
 router.get("/:tareaId", getTareaPorId);
 
 // Rutas solo para docentes
-router.post("/", verificarRol("DOCENTE"), postCrearTarea);
-router.put("/:tareaId", verificarRol("DOCENTE"), putActualizarTarea);
-router.delete("/:tareaId", verificarRol("DOCENTE"), deleteEliminarTarea);
-router.post("/:tareaId/calificaciones", verificarRol("DOCENTE"), postAsignarCalificacion);
-router.get("/:tareaId/calificaciones", verificarRol("DOCENTE"), getCalificacionesPorTarea);
-router.delete("/notas/:notaId", verificarRol("DOCENTE"), deleteCalificacion);
+router.post("/", verificarPermiso("usuario:docente"), postCrearTarea);
+router.put("/:tareaId", verificarPermiso("usuario:docente"), putActualizarTarea);
+router.delete("/:tareaId", verificarPermiso("usuario:docente"), deleteEliminarTarea);
+router.post("/:tareaId/calificaciones", verificarPermiso("usuario:docente"), postAsignarCalificacion);
+router.get("/:tareaId/calificaciones", verificarPermiso("usuario:docente"), getCalificacionesPorTarea);
+router.delete("/notas/:notaId", verificarPermiso("usuario:docente"), deleteCalificacion);
 
 export default router;

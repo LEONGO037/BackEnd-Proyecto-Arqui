@@ -1,6 +1,6 @@
 import express from "express";
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
-import { verificarRol } from "../../middlewares/roles.middleware.js";
+import { verificarPermiso } from "../../middlewares/roles.middleware.js";
 import {
   getMisInscripciones,
   postInscribir,
@@ -20,7 +20,7 @@ router.delete("/desinscribir/:cursoId", deleteDesinscribir);
 // Rutas de administración (requieren rol ADMIN)
 router.get(
   "/resumen",
-  verificarRol("ADMINISTRADOR"),
+  verificarPermiso("inscripciones:gestionar"),
   getResumenCursos
 );
 

@@ -1,42 +1,42 @@
 import express from "express";
-// Le agregamos un ../ extra a todos para llegar a 'src'
 import { verificarToken } from "../../middlewares/autenticacion.middleware.js";
-import { verificarRol } from "../../middlewares/roles.middleware.js";
-import { 
+import { verificarPermiso } from "../../middlewares/roles.middleware.js";
+import {
   crearDocenteAdmin,
   verDocentes,
-  actualizarDocenteAdmin
+  actualizarDocenteAdmin,
 } from "../../controllers/administrador.docente/docente.controller.js";
 import { asignarCursoAdmin } from "../../controllers/administrador.docente/docente.curso.js";
+
 const router = express.Router();
 
+// Solo ADMIN_CUENTAS puede crear docentes
 router.post(
   "/crear-docente",
   verificarToken,
-  verificarRol("ADMINISTRADOR"),
+  verificarPermiso("usuarios:gestionar"),
   crearDocenteAdmin
 );
 
 router.post(
   "/asignar-curso",
   verificarToken,
-  verificarRol("ADMINISTRADOR"),
+  verificarPermiso("cursos:gestionar"),
   asignarCursoAdmin
 );
+
 router.get(
   "/docentes",
   verificarToken,
-  verificarRol("ADMINISTRADOR"),
+  verificarPermiso("cursos:gestionar"),
   verDocentes
 );
 
 router.put(
   "/docentes/:id",
   verificarToken,
-  verificarRol("ADMINISTRADOR"),
+  verificarPermiso("usuarios:gestionar"),
   actualizarDocenteAdmin
 );
-
-
 
 export default router;

@@ -6,6 +6,34 @@ import { registrarAuditoria } from "../../services/auditoria.service.js";
  * GET /api/cursos
  * Lista todos los cursos activos.
  */
+export const getAllCursosAdmin = async (req, res) => {
+  try {
+    const cursos = await CursosModel.getAllAdmin();
+    res.json(cursos);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteCursoController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await CursosModel.deleteCurso(id);
+    if (req.usuario?.id) {
+      await registrarAuditoria({
+        usuario_id: req.usuario.id,
+        accion: 'DELETE',
+        tabla_afectada: 'cursos',
+        registro_id: id,
+        detalle: {},
+      });
+    }
+    res.json({ mensaje: 'Curso eliminado correctamente' });
+  } catch (err) {
+    res.status(err.message === 'Curso no encontrado' ? 404 : 500).json({ error: err.message });
+  }
+};
+
 export const getCursos = async (req, res) => {
   try {
     const cursos = await CursosModel.getAll();

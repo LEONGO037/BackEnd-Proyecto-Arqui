@@ -2,6 +2,40 @@ import pool from "../../config/db.js";
 
 export const CursosModel = {
     /**
+     * Obtiene todos los cursos para el panel admin (con docente y prerrequisitos).
+     */
+    getAllAdmin: async () => {
+        const { rows } = await pool.query(
+            `SELECT c.id, c.nombre, c.descripcion, c.costo, c.cupo_maximo, c.minimo_estudiantes,
+                    u.nombre AS docente_nombre, u.apellido_paterno AS docente_apellido,
+                    dc.estado AS docente_estado,
+                    COALESCE(
+                      (SELECT json_agg(cp.curso_prerrequisito_id)
+                       FROM curso_prerrequisitos cp
+                       WHERE cp.curso_id = c.id), '[]'
+                    ) AS prerrequisitos
+             FROM cursos c
+             LEFT JOIN docente_curso dc ON c.id = dc.curso_id
+             LEFT JOIN usuarios u ON u.id = dc.usuario_id
+             WHERE c.activo = true
+             ORDER BY c.id`
+        );
+        return rows;
+    },
+
+    /**
+     * Elimina un curso (soft delete marcando activo = false).
+     */
+    deleteCurso: async (id) => {
+        const { rows } = await pool.query(
+            `UPDATE cursos SET activo = false WHERE id = $1 RETURNING id`,
+            [id]
+        );
+        if (rows.length === 0) throw new Error('Curso no encontrado');
+        return rows[0];
+    },
+
+    /**
      * Obtiene todos los cursos activos.
      */
     getAll: async () => {
