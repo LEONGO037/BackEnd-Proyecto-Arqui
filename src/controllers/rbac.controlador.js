@@ -11,6 +11,7 @@ import {
   removePermisoFromRol,
   getAccessMatrix,
   getUserRol,
+  getUsuarioDetalle as getUsuarioDetalleModel,
   updateUserRol,
   getAllUsuariosConRol,
   deleteUsuarioById,
@@ -92,6 +93,14 @@ export const getUsuarioRol = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+export const getUsuarioDetalle = async (req, res, next) => {
+  try {
+    const data = await getUsuarioDetalleModel(req.params.id);
+    if (!data) return res.status(404).json({ error: "Usuario no encontrado" });
+    res.json(data);
+  } catch (err) { next(err); }
+};
+
 export const putUsuarioRol = async (req, res, next) => {
   try {
     const { rol_id } = req.body;
@@ -110,7 +119,8 @@ export const getMatriz = async (req, res, next) => {
 
 export const getUsuarios = async (req, res, next) => {
   try {
-    const usuarios = await getAllUsuariosConRol();
+    const includeInactive = String(req.query.include_inactive).toLowerCase() === 'true';
+    const usuarios = await getAllUsuariosConRol(includeInactive);
     res.json(usuarios);
   } catch (err) { next(err); }
 };

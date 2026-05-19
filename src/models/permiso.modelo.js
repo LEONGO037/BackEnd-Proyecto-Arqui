@@ -48,18 +48,19 @@ export const updateRole = async (id, nombre, descripcion) => {
 };
 
 export const deleteRole = async (id) => {
-  // Block deletion if users are still assigned to this role
-  const usersRes = await pool.query(
-    `SELECT COUNT(*) FROM usuarios WHERE rol_id = $1`, [id]
+  const res = await pool.query(
+    `UPDATE roles
+     SET activo = FALSE
+     WHERE id = $1 AND activo = TRUE
+     RETURNING id`,
+    [id]
   );
-  if (parseInt(usersRes.rows[0].count) > 0) {
-    const err = new Error('No se puede eliminar el rol porque tiene usuarios asignados. Reasigna los usuarios primero.');
-    err.status = 409;
+
+  if (!res.rows[0]) {
+    const err = new Error('Rol no encontrado o ya inactivo');
+    err.status = 404;
     throw err;
   }
-  // Remove permission assignments first, then the role
-  await pool.query(`DELETE FROM rol_permisos WHERE rol_id = $1`, [id]);
-  await pool.query(`DELETE FROM roles WHERE id = $1`, [id]);
 };
 
 export const createPermiso = async (nombre, descripcion) => {
@@ -138,6 +139,19 @@ export const getUserRol = async (userId) => {
   return res.rows[0];
 };
 
+export const getUsuarioDetalle = async (userId) => {
+  const res = await pool.query(
+    `SELECT u.id, u.nombre, u.apellido_paterno, u.apellido_materno, u.email,
+            u.activo, u.email_verificado, u.intentos_fallidos, u.bloqueado_hasta,
+            u.fecha_creacion, u.rol_id, r.nombre AS rol_nombre
+     FROM usuarios u
+     LEFT JOIN roles r ON r.id = u.rol_id
+     WHERE u.id = $1`,
+    [userId]
+  );
+  return res.rows[0];
+};
+
 export const updateUserRol = async (userId, rolId) => {
   const res = await pool.query(
     `UPDATE usuarios SET rol_id = $1 WHERE id = $2 RETURNING id, nombre, email, rol_id`,
@@ -146,19 +160,34 @@ export const updateUserRol = async (userId, rolId) => {
   return res.rows[0];
 };
 
-export const getAllUsuariosConRol = async () => {
+export const getAllUsuariosConRol = async (includeInactive = false) => {
   const res = await pool.query(
     `SELECT u.id, u.nombre, u.apellido_paterno, u.email,
             r.nombre AS rol_nombre, u.rol_id,
+            u.activo,
             u.bloqueado_hasta, u.intentos_fallidos,
             u.email_verificado
      FROM usuarios u
      LEFT JOIN roles r ON r.id = u.rol_id
-     ORDER BY u.id`
+     WHERE ($1::boolean = TRUE OR u.activo = TRUE)
+     ORDER BY u.id`,
+    [includeInactive]
   );
   return res.rows;
 };
 
 export const deleteUsuarioById = async (id) => {
-  await pool.query(`DELETE FROM usuarios WHERE id = $1`, [id]);
+  const res = await pool.query(
+    `UPDATE usuarios
+     SET activo = FALSE
+     WHERE id = $1 AND activo = TRUE
+     RETURNING id`,
+    [id]
+  );
+
+  if (!res.rows[0]) {
+    const err = new Error("Usuario no encontrado o ya inactivo");
+    err.status = 404;
+    throw err;
+  }
 };

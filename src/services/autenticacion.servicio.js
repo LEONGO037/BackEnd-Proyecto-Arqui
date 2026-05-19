@@ -69,6 +69,10 @@ export const iniciarSesion = async (email, password) => {
   const usuario = await obtenerUsuarioPorEmailConRol(email);
   if (!usuario) throw new Error("Credenciales inválidas");
 
+  if (!usuario.activo) {
+    throw new Error("Tu cuenta está desactivada. Contacta al administrador.");
+  }
+
   // Cuenta bloqueada (5+ intentos fallidos)
   if (usuario.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > new Date()) {
     throw new Error(

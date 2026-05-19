@@ -14,10 +14,15 @@ export const verificarToken = async (req, res, next) => {
 
     // Reject tokens issued before last password change
     const res2 = await pool.query(
-      "SELECT password_cambiado_en FROM usuarios WHERE id = $1",
+      "SELECT password_cambiado_en, activo FROM usuarios WHERE id = $1",
       [decodificado.id]
     );
     const row = res2.rows[0];
+
+    if (!row?.activo) {
+      return res.status(401).json({ error: "Token inválido: usuario desactivado" });
+    }
+
     if (row?.password_cambiado_en) {
       const cambiadoEn = Math.floor(new Date(row.password_cambiado_en).getTime() / 1000);
       if (decodificado.iat < cambiadoEn) {
