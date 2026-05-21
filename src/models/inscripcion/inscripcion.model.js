@@ -181,7 +181,6 @@ export const obtenerResumenCursosConInscritos = async () => {
              'id_relacion', ec.id,
              'nombre', u.nombre,
              'apellido', u.apellido_paterno || ' ' || COALESCE(u.apellido_materno, ''),
-             'ci_nit', u.ci_nit,
              'estado_academico', ec.estado_academico,
              'fecha_registro', ec.fecha_registro
            ) ORDER BY ec.fecha_registro
