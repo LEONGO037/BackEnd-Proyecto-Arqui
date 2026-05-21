@@ -149,7 +149,7 @@ const generarPasswordDefault = () => {
 
 export const postCrearUsuario = async (req, res, next) => {
   try {
-    const { nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion, email, rol_id } = req.body;
+    const { nombre, apellido_paterno, apellido_materno, email, rol_id } = req.body;
     if (!nombre || !apellido_paterno || !email || !rol_id) {
       return res.status(400).json({ error: "nombre, apellido_paterno, email y rol_id son requeridos" });
     }
@@ -160,7 +160,7 @@ export const postCrearUsuario = async (req, res, next) => {
     const codigo_verificacion_expira = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     const usuario = await crearUsuarioConVerificacion({
-      nombre, apellido_paterno, apellido_materno, ci_nit, telefono, direccion, email,
+      nombre, apellido_paterno, apellido_materno, email,
       password_hash, rol_id, codigo_verificacion, codigo_verificacion_expira,
       debe_cambiar_password: true,
     });
