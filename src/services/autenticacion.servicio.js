@@ -18,6 +18,7 @@ import {
   limpiarResetToken,
   registrarLoginExitoso,
   contarLoginsRecientes,
+  guardarCodigoVerificacion,
 } from "../models/usuario.modelo.js";
 import {
   validarCredencialesLogin,
@@ -68,6 +69,10 @@ export const iniciarSesion = async (email, password) => {
   const usuario = await obtenerUsuarioPorEmailConRol(email);
   if (!usuario) throw new Error("Credenciales inválidas");
 
+  if (!usuario.activo) {
+    throw new Error("Tu cuenta está desactivada. Contacta al administrador.");
+  }
+
   // Cuenta bloqueada (5+ intentos fallidos)
   if (usuario.bloqueado_hasta && new Date(usuario.bloqueado_hasta) > new Date()) {
     throw new Error(
@@ -88,10 +93,10 @@ export const iniciarSesion = async (email, password) => {
     throw new Error("Credenciales inválidas");
   }
 
-  // Contraseña vencida (90 días)
-  const diasDesdeCambio =
-    (Date.now() - new Date(usuario.password_cambiado_en)) / 86400000;
-  if (diasDesdeCambio > 90) {
+  const diasDesdeCambio = usuario.password_cambiado_en
+    ? (Date.now() - new Date(usuario.password_cambiado_en)) / 86400000
+    : 0;
+  if (usuario.password_cambiado_en && diasDesdeCambio > 90) {
     // Devolvemos token pero marcamos expirada
     const permisos = await getRolePermissions(usuario.rol_id);
     const token = firmarToken({ ...usuario, debe_cambiar_password: true }, permisos);
@@ -213,6 +218,32 @@ export const verificarCodigoEmail = async (email, codigo) => {
   const usuario = await verificarCodigoOTP(email, codigoHash);
   if (!usuario) throw new Error("Código inválido o expirado");
   return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
+};
+
+export const reenviarCodigoVerificacion = async (email) => {
+  const GENERIC_MSG = "Si el correo existe en el sistema, se reenvió el código.";
+  await new Promise((r) => setTimeout(r, 300));
+
+  const usuario = await obtenerUsuarioPorEmail(email);
+  if (!usuario) return { mensaje: GENERIC_MSG };
+
+  if (usuario.email_verificado) {
+    throw new Error("El correo ya está verificado.");
+  }
+
+  const codigo = generarCodigo6();
+  const codigoHash = hashCodigo(codigo);
+  const expira = new Date(Date.now() + 15 * 60 * 1000);
+
+  await guardarCodigoVerificacion(usuario.id, codigoHash, expira);
+
+  enviarEmail({
+    to: email,
+    subject: "Verifica tu correo — College X Nexus",
+    html: emailVerificacionCodigo({ nombre: usuario.nombre, codigo }),
+  }).catch(() => {});
+
+  return { mensaje: GENERIC_MSG };
 };
 
 // ─── CAMBIAR CONTRASEÑA ───────────────────────────────────────────────────────

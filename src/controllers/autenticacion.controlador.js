@@ -6,6 +6,7 @@ import {
   solicitarResetPassword,
   verificarCodigoReset as verificarCodigoResetServicio,
   resetPassword,
+  reenviarCodigoVerificacion,
 } from "../services/autenticacion.servicio.js";
 import { registrarAuditoriaSegura } from "../services/auditoria.service.js";
 import { getRolePermissions } from "../models/permiso.modelo.js";
@@ -49,6 +50,17 @@ export const verificarCodigo = async (req, res, next) => {
   try {
     const { email, codigo } = req.body;
     const resultado = await verificarCodigoEmail(email, codigo);
+    res.json(resultado);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const reenviarCodigo = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: "Email requerido" });
+    const resultado = await reenviarCodigoVerificacion(email);
     res.json(resultado);
   } catch (error) {
     res.status(400).json({ error: error.message });

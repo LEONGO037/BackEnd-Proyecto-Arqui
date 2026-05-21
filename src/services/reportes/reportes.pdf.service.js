@@ -180,7 +180,7 @@ export const generarPDFInscripciones = (datos, resumen) => {
       // Columnas ajustadas al ancho landscape (741 usable)
       const COLS = [
         { key: "fecha",   label: "Fecha",           x: 50,   w: 60  },
-        { key: "nombre",  label: "Estudiante",       x: 113,  w: 213 },
+        { key: "nombre",  label: "Estudiante",       x: 113,  w: 210 },
         { key: "curso",   label: "Curso",            x: 329,  w: 150 },
         { key: "costo",   label: "Costo (Bs)",       x: 482,  w: 60, align: "right" },
         { key: "estado",  label: "Estado Académico", x: 545,  w: 80 },
@@ -203,7 +203,7 @@ export const generarPDFInscripciones = (datos, resumen) => {
 
         y = dibujarFila(doc, y, [
           { x: 50,  w: 60,  text: formatFecha(row.fecha_registro) },
-          { x: 113, w: 213, text: `${row.estudiante_nombre} ${row.estudiante_apellido}` },
+          { x: 113, w: 210, text: `${row.estudiante_nombre} ${row.estudiante_apellido}` },
           { x: 329, w: 150, text: row.curso_nombre },
           { x: 482, w: 60,  text: formatMonto(row.costo_bs), align: "right" },
           { x: 545, w: 80,  text: row.estado_academico || "—" },

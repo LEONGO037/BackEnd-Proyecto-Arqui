@@ -128,7 +128,8 @@ export const crearUsuarioConVerificacion = async (datosUsuario) => {
      VALUES ($1,$2,$3,$4,$5,$6,FALSE,$7,$8,$9)
      RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
     [
-      nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id,
+      nombre, apellido_paterno, apellido_materno,
+      email, password_hash, rol_id,
       codigo_verificacion, codigo_verificacion_expira, debe_cambiar_password,
     ]
   );

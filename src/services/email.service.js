@@ -1,64 +1,55 @@
 import nodemailer from 'nodemailer';
-import { Resend } from 'resend';
+import dns from 'dns';
 
-const resend = new Resend(process.env.EMAIL_RESEND_API_KEY);
-
-const FROM = process.env.EMAIL_FROM || 'College X Nexus <onboarding@resend.dev>';
-
-const smtpTransporter = process.env.EMAIL_USER && process.env.EMAIL_PASS
-  ? nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
-    },
-  })
-  : null;
-
-const buildSmtpFrom = () => {
-  if (process.env.EMAIL_USER) {
-    return `College X Nexus <${process.env.EMAIL_USER}>`;
+// Configuración de Nodemailer (SMTP) optimizada para producción
+const transporter = nodemailer.createTransport({
+  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.EMAIL_PORT || '587'),
+  secure: process.env.EMAIL_PORT === '465', // false para 587 (STARTTLS)
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD,
+  },
+  // Forzar IPv4 para evitar el error ENETUNREACH en ciertos entornos (Docker/Render/Railway)
+  dnsLookup: (hostname, options, callback) => {
+    dns.lookup(hostname, { family: 4 }, callback);
+  },
+  tls: {
+    // Evita errores de certificado que pueden ocurrir en entornos de red específicos
+    rejectUnauthorized: false
   }
-  return FROM;
-};
+});
 
-const enviarConSmtp = async ({ to, subject, html, attachments }) => {
-  if (!smtpTransporter) {
-    throw new Error('No hay configuracion SMTP de respaldo');
-  }
+const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USER}>`;
 
-  const destino = Array.isArray(to) ? to.join(', ') : to;
-  await smtpTransporter.sendMail({
-    from: buildSmtpFrom(),
-    to: destino,
-    subject,
-    html,
-    attachments,
-  });
-};
-
+/**
+ * Envía un correo electrónico utilizando Nodemailer (SMTP)
+ * @param {Object} options - Opciones del correo
+ * @param {string|string[]} options.to - Destinatario(s)
+ * @param {string} options.subject - Asunto
+ * @param {string} options.html - Contenido HTML
+ * @param {Array} [options.attachments] - Adjuntos (opcional)
+ */
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
-  const payload = {
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+    console.warn('⚠️ Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
+    throw new Error('Servicio de correo no configurado');
+  }
+
+  const mailOptions = {
     from: FROM,
-    to: Array.isArray(to) ? to : [to],
+    to: Array.isArray(to) ? to.join(', ') : to,
     subject,
     html,
+    attachments: attachments || [],
   };
-  if (attachments?.length) payload.attachments = attachments;
 
   try {
-    const result = await resend.emails.send(payload);
-    if (result?.error) {
-      throw new Error(result.error.message || 'Resend devolvio un error al enviar el correo');
-    }
-    return result;
+    const info = await transporter.sendMail(mailOptions);
+    return info;
   } catch (error) {
-    if (!smtpTransporter) {
-      throw error;
-    }
-
-    await enviarConSmtp({ to, subject, html, attachments });
-    return { fallback: 'smtp' };
+    console.error('❌ Error al enviar correo con Nodemailer:', error.message);
+    throw error;
   }
 };
 
@@ -81,28 +72,40 @@ export const emailVerificacionCodigo = ({ nombre, codigo }) => `
   </div>
 `;
 
-export const emailDocenteBienvenida = ({ nombre, email, codigo, passwordDefault }) => `
+export const emailDocenteBienvenida = ({ nombre, email, passwordDefault }) => `
   <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:2rem;background:#f9fafb;border-radius:12px">
     <h2 style="color:#003366;margin-bottom:0.5rem">College X Nexus</h2>
     <h3 style="color:#1e293b">Tu cuenta de docente ha sido creada</h3>
     <p>Hola <strong>${nombre}</strong>,</p>
     <p>Un administrador ha creado una cuenta docente para ti con el correo: <strong>${email}</strong>.</p>
 
-    <h4 style="margin-top:1.5rem;color:#1e293b">1. Verifica tu correo con este código:</h4>
-    <div style="text-align:center;margin:1rem 0">
-      <span style="font-size:2.5rem;font-weight:700;letter-spacing:0.5rem;color:#003366;background:#e0e7ff;padding:0.75rem 1.5rem;border-radius:10px">
-        ${codigo}
-      </span>
-    </div>
-    <p style="color:#64748b;font-size:0.9rem">Código válido por <strong>24 horas</strong>.</p>
-
-    <h4 style="margin-top:1.5rem;color:#1e293b">2. Tu contraseña temporal:</h4>
+    <h4 style="margin-top:1.5rem;color:#1e293b">Tu contraseña temporal:</h4>
     <div style="text-align:center;margin:1rem 0">
       <code style="font-size:1.3rem;background:#f1f5f9;padding:0.5rem 1rem;border-radius:8px;color:#334155">${passwordDefault}</code>
     </div>
 
     <p style="margin-top:1.5rem;color:#64748b;font-size:0.9rem">
-      Después de verificar tu correo, inicia sesión y <strong>deberás cambiar tu contraseña</strong> antes de acceder al sistema.
+      Inicia sesión con esta contraseña y <strong>deberás cambiarla</strong> antes de acceder al sistema por primera vez.
+    </p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0"/>
+    <p style="color:#94a3b8;font-size:0.8rem">Si no esperabas este mensaje, contacta al administrador del sistema.</p>
+  </div>
+`;
+
+export const emailEstudianteBienvenidaAdmin = ({ nombre, email, passwordDefault }) => `
+  <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:2rem;background:#f9fafb;border-radius:12px">
+    <h2 style="color:#003366;margin-bottom:0.5rem">College X Nexus</h2>
+    <h3 style="color:#1e293b">Tu cuenta de estudiante ha sido creada</h3>
+    <p>Hola <strong>${nombre}</strong>,</p>
+    <p>Un administrador ha creado una cuenta de estudiante para ti con el correo: <strong>${email}</strong>.</p>
+
+    <h4 style="margin-top:1.5rem;color:#1e293b">Tu contraseña temporal:</h4>
+    <div style="text-align:center;margin:1rem 0">
+      <code style="font-size:1.3rem;background:#f1f5f9;padding:0.5rem 1rem;border-radius:8px;color:#334155">${passwordDefault}</code>
+    </div>
+
+    <p style="margin-top:1.5rem;color:#64748b;font-size:0.9rem">
+      Te recomendamos cambiar esta contraseña después de tu primer ingreso por motivos de seguridad.
     </p>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0"/>
     <p style="color:#94a3b8;font-size:0.8rem">Si no esperabas este mensaje, contacta al administrador del sistema.</p>

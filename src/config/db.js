@@ -12,7 +12,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   // 👇 CORRECCIÓN 1: Forzamos IPv4 para evitar el ETIMEDOUT
-  family: 4, 
+  family: 4,
   // 👇 CORRECCIÓN 2: Supabase requiere SSL (conexión segura)
   ssl: {
     rejectUnauthorized: false, // Esto permite conectar aunque el certificado no esté verificado localmente

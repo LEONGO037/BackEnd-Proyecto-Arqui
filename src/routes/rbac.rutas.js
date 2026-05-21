@@ -11,6 +11,7 @@ import {
   postAsignarPermiso,
   deletePermisoDeRol,
   getUsuarioRol,
+  getUsuarioDetalle,
   putUsuarioRol,
   getMatriz,
   getUsuarios,
@@ -18,12 +19,12 @@ import {
   deleteUsuario,
   postCrearUsuario,
 } from "../controllers/rbac.controlador.js";
-
 const router = express.Router();
 router.use(verificarToken);
 
+router.get("/usuarios/:id/detalle",        verificarPermiso("usuarios:gestionar"), getUsuarioDetalle);
 // Roles — all managed under roles:gestionar
-router.get("/roles",                       verificarPermiso("roles:gestionar"),    getRoles);
+router.get("/roles",                       verificarPermiso("roles:gestionar", "usuarios:gestionar"),    getRoles);
 router.post("/roles",                      verificarPermiso("roles:gestionar"),    postRol);
 router.put("/roles/:id",                   verificarPermiso("roles:gestionar"),    putRol);
 router.delete("/roles/:id",                verificarPermiso("roles:gestionar"),    deleteRol);
