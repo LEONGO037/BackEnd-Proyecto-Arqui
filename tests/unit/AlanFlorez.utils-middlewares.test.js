@@ -119,13 +119,12 @@ describe('ALAN FLOREZ - asyncHandler + roles.middleware', () => {
     middleware(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'Acceso denegado',
-      rol_requerido: ['ADMINISTRADOR', 'DOCENTE'],
-      tu_rol: 'ESTUDIANTE',
-    });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(403);
+    expect(errorArg.message).toBe('Acceso denegado');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('6. verificarRol acepta arrays anidados (flat) de roles', () => {
@@ -174,12 +173,12 @@ describe('ALAN FLOREZ - asyncHandler + roles.middleware', () => {
     await middleware(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'Acceso denegado',
-      permisos_requeridos: ['cursos:eliminar'],
-    });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(403);
+    expect(errorArg.message).toBe('Acceso denegado');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('9. verificarPermiso responde 403 cuando el token no incluye rol_id', async () => {
@@ -193,12 +192,13 @@ describe('ALAN FLOREZ - asyncHandler + roles.middleware', () => {
     await middleware(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'Acceso denegado',
-      detalle: 'rol_id no encontrado en el token',
-    });
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(403);
+    expect(errorArg.message).toBe('Acceso denegado');
     expect(getRolePermissions).not.toHaveBeenCalled();
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('10. verificarPermiso responde 500 cuando getRolePermissions arroja una excepción', async () => {
@@ -213,8 +213,11 @@ describe('ALAN FLOREZ - asyncHandler + roles.middleware', () => {
     await middleware(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Error al verificar permisos' });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(500);
+    expect(errorArg.message).toBe('Error al verificar permisos');
+    expect(res.status).not.toHaveBeenCalled();
   });
 });

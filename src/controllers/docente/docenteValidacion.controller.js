@@ -45,7 +45,7 @@ const validarFormatoPassword = (password) => {
  * los requisitos, y actualiza el hash en la base de datos.
  * Cuerpo esperado: { password_actual: string, nueva_password: string }
  */
-export const cambiarPassword = async (req, res) => {
+export const cambiarPassword = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { password_actual, nueva_password } = req.body;
@@ -68,7 +68,9 @@ export const cambiarPassword = async (req, res) => {
       docente.password_hash
     );
     if (!passwordActualCorrecta) {
-      return res.status(401).json({ error: "La contraseña actual es incorrecta." });
+      const err = new Error("La contraseña actual es incorrecta.");
+      err.statusCode = 401;
+      return next(err);
     }
 
     // Validar que la nueva contraseña cumpla el formato requerido
@@ -108,7 +110,7 @@ export const cambiarPassword = async (req, res) => {
       },
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };
 
@@ -118,7 +120,7 @@ export const cambiarPassword = async (req, res) => {
  * por defecto "Docente#Ucb2026". Útil para detectar primer inicio de sesión
  * y redirigir al formulario de cambio de contraseña.
  */
-export const verificarPasswordDefault = async (req, res) => {
+export const verificarPasswordDefault = async (req, res, next) => {
   try {
     const { id } = req.params;
 
@@ -138,6 +140,6 @@ export const verificarPasswordDefault = async (req, res) => {
         : "El docente ya tiene una contraseña personalizada.",
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    next(error);
   }
 };

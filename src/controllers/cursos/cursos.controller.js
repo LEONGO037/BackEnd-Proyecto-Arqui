@@ -175,29 +175,29 @@ export const getCursosSinDocente = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
-export const validarInscripcionCurso = async (req, res) => {
+export const validarInscripcionCurso = async (req, res, next) => {
   try {
 
     const estudiante_id = req.usuario.id;
     const { curso_id } = req.params;
 
     const resultado = await CursosModel.validarPrerrequisitos(
-  estudiante_id,
-  curso_id
-);
+      estudiante_id,
+      curso_id
+    );
 
     if (!resultado.permitido) {
-  return res.status(403).json({
-    mensaje: `Debes aprobar primero el curso: ${resultado.curso_faltante}`
-  });
-}
+      const err = new Error(`Debes aprobar primero el curso: ${resultado.curso_faltante}`);
+      err.statusCode = 403;
+      return next(err);
+    }
 
     res.json({
       mensaje: "Prerrequisitos cumplidos. Puedes inscribirte."
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 export const updateCurso = async (req, res) => {

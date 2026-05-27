@@ -10,7 +10,9 @@ export const verificarToken = async (req, res, next) => {
       exito: false,
       req,
     }).catch(() => { });
-    return res.status(401).json({ error: "Token no proporcionado" });
+    const err = new Error("Token no proporcionado");
+    err.statusCode = 401;
+    return next(err);
   }
 
   const token = header.split(" ")[1];
@@ -36,7 +38,9 @@ export const verificarToken = async (req, res, next) => {
         req,
         detalle: { motivo: "USUARIO_DESACTIVADO" },
       }).catch(() => { });
-      return res.status(401).json({ error: "Token inválido: usuario desactivado" });
+      const err = new Error("Token inválido: usuario desactivado");
+      err.statusCode = 401;
+      return next(err);
     }
 
     if (row?.password_cambiado_en) {
@@ -50,7 +54,9 @@ export const verificarToken = async (req, res, next) => {
           req,
           detalle: { motivo: "PASSWORD_CAMBIADO" },
         }).catch(() => { });
-        return res.status(401).json({ error: "Token inválido: contraseña cambiada recientemente" });
+        const err = new Error("Token inválido: contraseña cambiada recientemente");
+        err.statusCode = 401;
+        return next(err);
       }
     }
 
@@ -63,6 +69,8 @@ export const verificarToken = async (req, res, next) => {
       req,
       detalle: { motivo: err?.name || "JWT_INVALIDO" },
     }).catch(() => { });
-    return res.status(401).json({ error: "Token inválido o expirado" });
+    const authError = new Error("Token inválido o expirado");
+    authError.statusCode = 401;
+    return next(authError);
   }
 };

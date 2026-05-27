@@ -6,7 +6,9 @@ export const postGenerarYEnviarFactura = async (req, res, next) => {
   try {
     const estudianteId = req.usuario?.id;
     if (!estudianteId) {
-      return res.status(401).json({ error: "No autorizado. Se requiere una sesión activa." });
+      const err = new Error("No autorizado. Se requiere una sesión activa.");
+      err.statusCode = 401;
+      return next(err);
     }
 
     const { nombre, email, nit, curso_ids, transaccionId } = req.body;

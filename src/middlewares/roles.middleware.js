@@ -21,7 +21,9 @@ export const verificarRol = (...roles) => {
       // No exponemos qué rol se requería ni cuál es el rol actual — solo
       // mensaje genérico. La info detallada queda en log_seguridad para
       // que el admin pueda auditar.
-      return res.status(403).json({ error: "Acceso denegado" });
+      const err = new Error("Acceso denegado");
+      err.statusCode = 403;
+      return next(err);
     }
     next();
   };
@@ -44,7 +46,9 @@ export const verificarPermiso = (...permisosRequeridos) => {
           req,
           detalle: { motivo: "ROL_ID_AUSENTE" },
         }).catch(() => { });
-        return res.status(403).json({ error: "Acceso denegado" });
+        const err = new Error("Acceso denegado");
+        err.statusCode = 403;
+        return next(err);
       }
 
       const permisos = await getRolePermissions(rolId);
@@ -65,12 +69,15 @@ export const verificarPermiso = (...permisosRequeridos) => {
 
         // No exponemos qué permiso se necesita — el atacante no debe saber
         // qué buscar. La info queda en log_seguridad para auditoría.
-        return res.status(403).json({ error: "Acceso denegado" });
+        const err = new Error("Acceso denegado");
+        err.statusCode = 403;
+        return next(err);
       }
       next();
     } catch (error) {
-      // No exponer error interno al cliente
-      res.status(500).json({ error: "Error al verificar permisos" });
+      const err = new Error("Error al verificar permisos");
+      err.statusCode = 500;
+      next(err);
     }
   };
 };

@@ -165,7 +165,9 @@ export const getPagosUsuario = async (req, res, next) => {
     const permisos = await getRolePermissions(req.usuario.rol_id);
     const esAdmin = permisos.includes("pagos:ver");
     if (!esAdmin && targetId !== req.usuario.id) {
-      return res.status(403).json({ error: "No puede acceder a datos de otro usuario" });
+      const err = new Error("No puede acceder a datos de otro usuario");
+      err.statusCode = 403;
+      return next(err);
     }
     const pagos = await PagosModel.obtenerPagosPorUsuario(targetId);
     res.json(pagos);

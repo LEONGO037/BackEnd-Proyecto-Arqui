@@ -56,9 +56,12 @@ describe('CHRISTIAN CORONEL - verificarToken (autenticacion.middleware)', () => 
     await verificarToken(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Token no proporcionado' });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(401);
+    expect(errorArg.message).toBe('Token no proporcionado');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('2. Responde 401 cuando jwt.verify lanza una excepción (token inválido)', async () => {
@@ -72,8 +75,12 @@ describe('CHRISTIAN CORONEL - verificarToken (autenticacion.middleware)', () => 
     await verificarToken(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Token inválido o expirado' });
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(401);
+    expect(errorArg.message).toBe('Token inválido o expirado');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('3. Llama a jwt.verify con audience e issuer correctos', async () => {
@@ -105,9 +112,12 @@ describe('CHRISTIAN CORONEL - verificarToken (autenticacion.middleware)', () => 
     await verificarToken(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Token inválido: usuario desactivado' });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(401);
+    expect(errorArg.message).toBe('Token inválido: usuario desactivado');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('5. Responde 401 si el token fue emitido antes del cambio de contraseña', async () => {
@@ -119,15 +129,18 @@ describe('CHRISTIAN CORONEL - verificarToken (autenticacion.middleware)', () => 
     });
     const req = { headers: { authorization: 'Bearer x' } };
     const res = buildRes();
+    const next = jest.fn();
 
     // Lógica
-    await verificarToken(req, res, jest.fn());
+    await verificarToken(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({
-      error: 'Token inválido: contraseña cambiada recientemente',
-    });
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(401);
+    expect(errorArg.message).toBe('Token inválido: contraseña cambiada recientemente');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('6. Llama a next() y adjunta req.usuario cuando todo es válido', async () => {
@@ -176,9 +189,12 @@ describe('CHRISTIAN CORONEL - verificarToken (autenticacion.middleware)', () => 
     await verificarToken(req, res, next);
 
     // Verificación
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Token inválido: usuario desactivado' });
-    expect(next).not.toHaveBeenCalled();
+    expect(next).toHaveBeenCalledTimes(1);
+    const errorArg = next.mock.calls[0][0];
+    expect(errorArg).toBeInstanceOf(Error);
+    expect(errorArg.statusCode).toBe(401);
+    expect(errorArg.message).toBe('Token inválido: usuario desactivado');
+    expect(res.status).not.toHaveBeenCalled();
   });
 
   test('9. Acepta el segundo segmento del header "Bearer <token>" como el token', async () => {

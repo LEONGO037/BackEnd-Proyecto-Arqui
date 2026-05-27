@@ -17,6 +17,7 @@ import rutasRbac          from "./routes/rbac.rutas.js";
 import rutasRiesgos       from "./routes/riesgos/riesgos.routes.js";
 import { logger, logAplicacion } from "./services/logger.service.js";
 import { sanitizarEntrada, sanitizarSalida } from "./middlewares/sanitizacion.middleware.js";
+import { secureByDefault } from "./middlewares/secureByDefault.middleware.js";
 
 const app = express();
 
@@ -91,6 +92,9 @@ app.use(sanitizarEntrada);
 // Sanitización global de salida (Punto 1.3) — filtra campos sensibles
 // (password_hash, tokens, códigos) de TODA respuesta JSON.
 app.use(sanitizarSalida);
+
+// Seguridad por Defecto — Exige token de forma global excepto lista blanca
+app.use(secureByDefault);
 
 // Confianza en proxy para que req.ip refleje la IP real detrás de reverse-proxy
 app.set("trust proxy", 1);
