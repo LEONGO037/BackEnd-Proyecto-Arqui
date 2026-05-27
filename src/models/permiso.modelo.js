@@ -11,22 +11,28 @@ export const getRolePermissions = async (rolId) => {
   return res.rows.map((r) => r.nombre);
 };
 
-export const getAllRoles = async () => {
+export const getAllRoles = async (includeInactive = false) => {
   const rolesRes = await pool.query(
     `SELECT r.id, r.nombre, r.descripcion, r.activo,
             COALESCE(json_agg(p.nombre) FILTER (WHERE p.nombre IS NOT NULL), '[]') AS permisos
      FROM roles r
      LEFT JOIN rol_permisos rp ON rp.rol_id = r.id
      LEFT JOIN permisos p ON p.id = rp.permiso_id AND p.activo = TRUE
+     WHERE ($1::boolean = TRUE OR r.activo = TRUE)
      GROUP BY r.id
-     ORDER BY r.id`
+     ORDER BY r.id`,
+    [includeInactive]
   );
   return rolesRes.rows;
 };
 
-export const getAllPermisos = async () => {
+export const getAllPermisos = async (includeInactive = false) => {
   const res = await pool.query(
-    `SELECT id, nombre, descripcion, activo FROM permisos ORDER BY nombre`
+    `SELECT id, nombre, descripcion, activo 
+     FROM permisos 
+     WHERE ($1::boolean = TRUE OR activo = TRUE)
+     ORDER BY nombre`,
+    [includeInactive]
   );
   return res.rows;
 };

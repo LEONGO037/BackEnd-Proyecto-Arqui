@@ -22,7 +22,8 @@ import { logSeguridad, logAplicacion } from "../services/logger.service.js";
 
 export const getRoles = async (req, res, next) => {
   try {
-    const roles = await getAllRoles();
+    const includeInactive = String(req.query.include_inactive).toLowerCase() === 'true';
+    const roles = await getAllRoles(includeInactive);
     res.json(roles);
   } catch (err) { next(err); }
 };
@@ -57,7 +58,8 @@ export const deleteRol = async (req, res, next) => {
 
 export const getPermisos = async (req, res, next) => {
   try {
-    const permisos = await getAllPermisos();
+    const includeInactive = String(req.query.include_inactive).toLowerCase() === 'true';
+    const permisos = await getAllPermisos(includeInactive);
     res.json(permisos);
   } catch (err) { next(err); }
 };
