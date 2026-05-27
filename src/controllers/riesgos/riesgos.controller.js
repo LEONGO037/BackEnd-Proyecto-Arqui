@@ -9,6 +9,13 @@ import {
     actualizarPlanAccion,
     obtenerResumen,
 } from "../../models/riesgos/riesgos.model.js";
+import {
+    listarMatriz,
+    obtenerMatrizPorId,
+    crearItemMatriz,
+    actualizarItemMatriz,
+    eliminarItemMatriz,
+} from "../../models/riesgos/matriz.model.js";
 import { ejecutarDeteccionCompleta } from "../../services/riesgos/deteccion.service.js";
 import { logAplicacion, logSeguridad } from "../../services/logger.service.js";
 
@@ -293,6 +300,81 @@ export const postEjecutarDeteccion = async (req, res, next) => {
         */
 
         res.json(resultado);
+    } catch (error) {
+        next(error);
+    }
+};
+
+// ───── ENDPOINTS MATRIZ DE RIESGOS ──────────────────────────────────────────
+
+export const getMatriz = async (req, res, next) => {
+    try {
+        const datos = await listarMatriz();
+        res.json({ total: datos.length, datos });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const postItemMatriz = async (req, res, next) => {
+    try {
+        const nuevo = await crearItemMatriz(req.body);
+        logAplicacion({
+            nivel: "INFO",
+            modulo: "riesgos",
+            evento: "MATRIZ_ITEM_CREADO",
+            mensaje: `Se registró un nuevo elemento en la matriz de riesgos: ${nuevo.activo_informacion}`,
+            usuario_id: req.usuario.id,
+            detalle: { item_id: nuevo.id },
+        }).catch(() => { });
+        res.status(201).json(nuevo);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const putItemMatriz = async (req, res, next) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({ error: "ID inválido" });
+        }
+        const actualizado = await actualizarItemMatriz(id, req.body);
+        if (!actualizado) {
+            return res.status(404).json({ error: "Elemento de la matriz no encontrado" });
+        }
+        logAplicacion({
+            nivel: "INFO",
+            modulo: "riesgos",
+            evento: "MATRIZ_ITEM_ACTUALIZADO",
+            mensaje: `Elemento de la matriz de riesgos ${id} actualizado`,
+            usuario_id: req.usuario.id,
+            detalle: { item_id: id },
+        }).catch(() => { });
+        res.json(actualizado);
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const deleteItemMatriz = async (req, res, next) => {
+    try {
+        const id = Number(req.params.id);
+        if (!Number.isInteger(id) || id <= 0) {
+            return res.status(400).json({ error: "ID inválido" });
+        }
+        const borrado = await eliminarItemMatriz(id);
+        if (!borrado) {
+            return res.status(404).json({ error: "Elemento no encontrado" });
+        }
+        logAplicacion({
+            nivel: "INFO",
+            modulo: "riesgos",
+            evento: "MATRIZ_ITEM_ELIMINADO",
+            mensaje: `Elemento de la matriz de riesgos ${id} eliminado`,
+            usuario_id: req.usuario.id,
+        }).catch(() => { });
+        res.status(204).end();
     } catch (error) {
         next(error);
     }
