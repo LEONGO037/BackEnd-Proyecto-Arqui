@@ -1,55 +1,80 @@
-import nodemailer from 'nodemailer';
-import dns from 'dns';
 import { logger } from './logger.service.js';
 
-// Configuración de Nodemailer (SMTP) optimizada para producción
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_PORT === '465', // false para 587 (STARTTLS)
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD,
-  },
-  // Forzar IPv4 para evitar el error ENETUNREACH en ciertos entornos (Docker/Render/Railway)
-  dnsLookup: (hostname, options, callback) => {
-    dns.lookup(hostname, { family: 4 }, callback);
-  },
-  tls: {
-    // Evita errores de certificado que pueden ocurrir en entornos de red específicos
-    rejectUnauthorized: false
-  }
-});
+// Brevo (ex-Sendinblue) v3 API vía fetch nativo. Sin dependencias.
+// HTTPS, sin SMTP → funciona en Render sin issues.
+const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 
-const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USER}>`;
+// Parsea "Nombre <email@x.com>" o "email@x.com" en { name, email }
+const parseFrom = () => {
+  const raw = process.env.EMAIL_FROM || '';
+  const match = raw.match(/^(.*?)\s*<(.+?)>\s*$/);
+  if (match) return { name: match[1].trim() || 'College X Nexus', email: match[2].trim() };
+  return { name: 'College X Nexus', email: raw.trim() };
+};
+
+// Convierte un attachment de Nodemailer { filename, content } al formato Brevo.
+const toBrevoAttachment = (a) => {
+  let contentBase64;
+  if (Buffer.isBuffer(a.content)) contentBase64 = a.content.toString('base64');
+  else if (typeof a.content === 'string') contentBase64 = Buffer.from(a.content).toString('base64');
+  else contentBase64 = '';
+  return { name: a.filename, content: contentBase64 };
+};
 
 /**
- * Envía un correo electrónico utilizando Nodemailer (SMTP)
- * @param {Object} options - Opciones del correo
- * @param {string|string[]} options.to - Destinatario(s)
- * @param {string} options.subject - Asunto
- * @param {string} options.html - Contenido HTML
- * @param {Array} [options.attachments] - Adjuntos (opcional)
+ * Envía un correo electrónico vía Brevo HTTP API.
+ * @param {Object} options
+ * @param {string|string[]} options.to
+ * @param {string} options.subject
+ * @param {string} options.html
+ * @param {Array} [options.attachments]
  */
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    logger.warn('Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    logger.warn('Configuración de correo incompleta (BREVO_API_KEY faltante).');
     throw new Error('Servicio de correo no configurado');
   }
 
-  const mailOptions = {
-    from: FROM,
-    to: Array.isArray(to) ? to.join(', ') : to,
+  const sender = parseFrom();
+  if (!sender.email) {
+    logger.warn('EMAIL_FROM no configurado correctamente.');
+    throw new Error('Email remitente no configurado');
+  }
+
+  const recipients = (Array.isArray(to) ? to : [to]).map((e) => ({ email: e }));
+
+  const payload = {
+    sender,
+    to: recipients,
     subject,
-    html,
-    attachments: attachments || [],
+    htmlContent: html,
   };
 
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    payload.attachment = attachments.map(toBrevoAttachment);
+  }
+
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return info;
+    const respuesta = await fetch(BREVO_URL, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.text();
+      logger.error(`Brevo rechazó el envío (${respuesta.status})`, cuerpo);
+      throw new Error(`Brevo error ${respuesta.status}: ${cuerpo.slice(0, 200)}`);
+    }
+
+    return await respuesta.json();
   } catch (error) {
-    logger.error('Error al enviar correo con Nodemailer', error.message);
+    logger.error('Error al enviar correo con Brevo', error.message);
     throw error;
   }
 };
