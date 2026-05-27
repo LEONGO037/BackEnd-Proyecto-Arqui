@@ -18,6 +18,7 @@ import {
 } from "../models/permiso.modelo.js";
 import { desbloquearUsuario, crearUsuarioConVerificacion } from "../models/usuario.modelo.js";
 import { enviarEmail } from "../services/email.service.js";
+import { logSeguridad, logAplicacion } from "../services/logger.service.js";
 
 export const getRoles = async (req, res, next) => {
   try {
@@ -106,6 +107,16 @@ export const putUsuarioRol = async (req, res, next) => {
     const { rol_id } = req.body;
     if (!rol_id) return res.status(400).json({ error: "rol_id es requerido" });
     const usuario = await updateUserRol(req.params.id, rol_id);
+
+    logAplicacion({
+      nivel: "INFO",
+      modulo: "seguridad",
+      evento: "ROL_ASIGNADO",
+      mensaje: `Rol asignado (${rol_id}) al usuario ID ${req.params.id}`,
+      usuario_id: req.usuario?.id,
+      detalle: { afectado_usuario_id: req.params.id, rol_id },
+    }).catch(() => {});
+
     res.json(usuario);
   } catch (err) { next(err); }
 };
@@ -128,6 +139,14 @@ export const getUsuarios = async (req, res, next) => {
 export const postDesbloquearUsuario = async (req, res, next) => {
   try {
     await desbloquearUsuario(req.params.id);
+
+    logSeguridad({
+      evento: "CUENTA_DESBLOQUEADA",
+      exito: true,
+      usuario_id: Number(req.params.id),
+      req,
+    }).catch(() => {});
+
     res.json({ mensaje: "Usuario desbloqueado correctamente" });
   } catch (err) { next(err); }
 };
@@ -171,6 +190,15 @@ export const postCrearUsuario = async (req, res, next) => {
       html: `<p>Hola <b>${nombre}</b>,</p>
              <p>Tu cuenta ha sido creada. Tu contraseña temporal es: <b>${passwordDefault}</b></p>
              <p>Deberás cambiarla al iniciar sesión por primera vez.</p>`,
+    }).catch(() => {});
+
+    logAplicacion({
+      nivel: "INFO",
+      modulo: "seguridad",
+      evento: "USUARIO_CREADO_ADMIN",
+      mensaje: `Cuenta de usuario administrador creada para ${email}`,
+      usuario_id: req.usuario?.id,
+      detalle: { email, rol_id },
     }).catch(() => {});
 
     res.status(201).json({ mensaje: "Usuario creado correctamente", usuario });

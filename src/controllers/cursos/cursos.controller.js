@@ -1,6 +1,7 @@
 // src/controllers/cursos/cursos.controller.js
 import { CursosModel } from "../../models/cursos/cursos.model.js";
 import { registrarAuditoria } from "../../services/auditoria.service.js";
+import { logAplicacion } from "../../services/logger.service.js";
 
 /**
  * GET /api/cursos
@@ -27,6 +28,15 @@ export const deleteCursoController = async (req, res) => {
         registro_id: id,
         detalle: {},
       });
+
+      logAplicacion({
+        nivel: "WARN",
+        modulo: "cursos",
+        evento: "CURSO_ELIMINADO",
+        mensaje: `Curso con ID ${id} eliminado`,
+        usuario_id: req.usuario.id,
+        detalle: { id },
+      }).catch(() => {});
     }
     res.json({ mensaje: 'Curso eliminado correctamente' });
   } catch (err) {
@@ -94,6 +104,15 @@ export const createCurso = async (req, res) => {
           tiene_prerrequisitos: !!(prerrequisitos && prerrequisitos.length > 0)
         },
       });
+
+      logAplicacion({
+        nivel: "INFO",
+        modulo: "cursos",
+        evento: "CURSO_CREADO",
+        mensaje: `Curso nuevo '${nuevoCurso.nombre}' creado`,
+        usuario_id: req.usuario.id,
+        detalle: { id: nuevoCurso.id, nombre: nuevoCurso.nombre, costo: nuevoCurso.costo },
+      }).catch(() => {});
     }
 
     res.status(201).json(nuevoCurso);
@@ -197,6 +216,15 @@ export const updateCurso = async (req, res) => {
       registro_id: id,
       detalle: req.body
     });
+
+    logAplicacion({
+      nivel: "INFO",
+      modulo: "cursos",
+      evento: "CURSO_EDITADO",
+      mensaje: `Curso ID ${id} actualizado`,
+      usuario_id: req.usuario.id,
+      detalle: { id, cambios: req.body },
+    }).catch(() => {});
 
     res.json({
       mensaje: "Curso actualizado correctamente",

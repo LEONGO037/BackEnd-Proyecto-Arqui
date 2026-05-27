@@ -1,6 +1,6 @@
-// src/controllers/pagos/factura.controller.js
 import { procesarFacturacion } from '../../services/factura/emisionFactura.service.js';
 import { registrarAuditoriaSegura } from '../../services/auditoria.service.js';
+import { logAplicacion } from '../../services/logger.service.js';
 
 export const postGenerarYEnviarFactura = async (req, res, next) => {
   try {
@@ -22,6 +22,15 @@ export const postGenerarYEnviarFactura = async (req, res, next) => {
       tabla_afectada: "facturas",
       detalle: { evento: "GENERAR_ENVIAR_FACTURA", nit, cursos: curso_ids, transaccion_id: transaccionId },
     });
+
+    logAplicacion({
+      nivel: "INFO",
+      modulo: "pagos",
+      evento: "FACTURA_GENERADA",
+      mensaje: `Factura generada y enviada a ${email} para la transacción ${transaccionId}`,
+      usuario_id: estudianteId,
+      detalle: { nit, cursos: curso_ids, transaccionId },
+    }).catch(() => {});
 
     res.status(200).json({ mensaje: "Factura generada y enviada correctamente por correo electrónico.", detalles });
   } catch (err) {

@@ -5,6 +5,8 @@ import {
   obtenerResumenEstadisticas,
   obtenerInscripcionesPorCurso,
   obtenerRegistrosAuditoria,
+  obtenerLogsAplicacion,
+  obtenerLogsSeguridad,
 } from "../../models/reportes/reportes.model.js";
 import {
   generarPDFInscripciones,
@@ -123,6 +125,77 @@ export const getReporteAuditoria = async (req, res) => {
     });
   } catch (err) {
     logger.error("Error getReporteAuditoria:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+const parseFiltrosLogsAplicacion = (query) => {
+  const limiteNum = Number(query.limite);
+  const limite = Number.isInteger(limiteNum) && limiteNum > 0
+    ? Math.min(limiteNum, 500)
+    : 100;
+
+  return {
+    limite,
+    modulo: query.modulo || undefined,
+    nivel: query.nivel || undefined,
+    evento: query.evento || undefined,
+    desde: query.desde ? new Date(query.desde) : undefined,
+    hasta: query.hasta ? new Date(query.hasta + "T23:59:59") : undefined,
+  };
+};
+
+const parseFiltrosLogsSeguridad = (query) => {
+  const limiteNum = Number(query.limite);
+  const limite = Number.isInteger(limiteNum) && limiteNum > 0
+    ? Math.min(limiteNum, 500)
+    : 100;
+
+  return {
+    limite,
+    evento: query.evento || undefined,
+    exito: query.exito || undefined,
+    email: query.email || undefined,
+    ip: query.ip || undefined,
+    desde: query.desde ? new Date(query.desde) : undefined,
+    hasta: query.hasta ? new Date(query.hasta + "T23:59:59") : undefined,
+  };
+};
+
+/**
+ * GET /api/reportes/logs-aplicacion
+ * Lista de logs de aplicación para administradores.
+ */
+export const getLogsAplicacion = async (req, res) => {
+  try {
+    const filtros = parseFiltrosLogsAplicacion(req.query);
+    const datos = await obtenerLogsAplicacion(filtros);
+
+    res.json({
+      total: datos.length,
+      datos,
+    });
+  } catch (err) {
+    logger.error("Error getLogsAplicacion:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+/**
+ * GET /api/reportes/logs-seguridad
+ * Lista de logs de seguridad para administradores.
+ */
+export const getLogsSeguridad = async (req, res) => {
+  try {
+    const filtros = parseFiltrosLogsSeguridad(req.query);
+    const datos = await obtenerLogsSeguridad(filtros);
+
+    res.json({
+      total: datos.length,
+      datos,
+    });
+  } catch (err) {
+    logger.error("Error getLogsSeguridad:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };

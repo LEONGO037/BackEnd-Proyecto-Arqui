@@ -3,6 +3,7 @@ import { crearOrden, capturarOrden } from '../../services/paypal.service.js';
 import { inscribirEstudianteEnCurso, inscribirEstudianteEnCursos } from '../../models/inscripcion/inscripcion.model.js';
 import * as PagosModel from '../../models/pagos/pagos.model.js';
 import { registrarAuditoriaSegura } from '../../services/auditoria.service.js';
+import { logAplicacion } from '../../services/logger.service.js';
 
 export const getConfig = (req, res) => {
   res.json({ clientId: process.env.PAYPAL_CLIENT_ID });
@@ -125,6 +126,15 @@ export const postCapturarOrden = async (req, res) => {
         pagos_registrados: detallesPago.length,
       },
     });
+
+    logAplicacion({
+      nivel: "INFO",
+      modulo: "pagos",
+      evento: "PAGO_PROCESADO",
+      mensaje: `Pago de PayPal capturado (${captura.id}) e inscripción realizada`,
+      usuario_id: estudianteId,
+      detalle: { transaccion: captura.id, cursos: ids, inscripciones: resultadoInscripcion.inscripciones },
+    }).catch(() => {});
 
     res.json({
       mensaje: ids.length === 1
