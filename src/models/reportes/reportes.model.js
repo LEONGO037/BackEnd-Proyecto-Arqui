@@ -253,9 +253,16 @@ export const obtenerLogsAplicacion = async ({
   desde,
   hasta,
 } = {}) => {
-  const condiciones = [];
-  const valores = [];
-  let idx = 1;
+  // Solo mostrar logs de funcionalidades críticas del negocio:
+  // cursos, inscripciones, pagos, facturas
+  // Se excluyen: riesgos, seguridad, express, autenticacion, etc.
+  const MODULOS_CRITICOS = ['cursos', 'inscripciones', 'pagos', 'facturas'];
+
+  const condiciones = [
+    `la.modulo = ANY($1::text[])`
+  ];
+  const valores = [MODULOS_CRITICOS];
+  let idx = 2;
 
   if (modulo) {
     condiciones.push(`la.modulo ILIKE $${idx}`);
@@ -287,7 +294,8 @@ export const obtenerLogsAplicacion = async ({
     idx++;
   }
 
-  const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+  const where = `WHERE ${condiciones.join(" AND ")}`;
+
 
   valores.push(Number(limite));
 

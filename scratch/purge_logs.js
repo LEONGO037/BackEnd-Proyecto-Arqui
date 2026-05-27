@@ -16,52 +16,60 @@ const pool = new Pool({
   },
 });
 
+// Módulos críticos de negocio que SÍ deben aparecer en log_aplicacion
+const MODULOS_PERMITIDOS = ['cursos', 'inscripciones', 'pagos', 'facturas'];
+
 async function run() {
-  console.log('Conectándose a Supabase para saneamiento integral de logs...');
+  console.log('Conectándose a Supabase para saneamiento integral de logs de aplicación...');
   try {
     const client = await pool.connect();
-    console.log('Ejecutando script de depuración en public.log_aplicacion...');
+    console.log('✅ Conectado. Ejecutando purga de log_aplicacion...\n');
     
-    // Contar cuántos registros calificarían para ser eliminados
+    // 1. Contar registros fuera de módulos críticos
     const countRes = await client.query(`
       SELECT COUNT(*) as count 
       FROM public.log_aplicacion 
-      WHERE (
-        modulo = 'express' 
-        AND (
-          nivel = 'WARN' 
-          OR (detalle->>'status')::int < 500 
-          OR mensaje LIKE '%Token no proporcionado%' 
-          OR mensaje LIKE '%Token inválido%'
-        )
-      ) OR modulo = 'riesgos'
-        OR evento LIKE 'MATRIZ_%';
-    `);
-    const count = countRes.rows[0].count;
-    console.log(`Registros encontrados para eliminar (advertencias de Express + eventos de Riesgos): ${count}`);
+      WHERE modulo NOT IN (${MODULOS_PERMITIDOS.map((_, i) => `$${i + 1}`).join(', ')})
+    `, MODULOS_PERMITIDOS);
+    
+    const count = parseInt(countRes.rows[0].count, 10);
+    console.log(`📊 Registros encontrados fuera de módulos críticos [${MODULOS_PERMITIDOS.join(', ')}]: ${count}`);
 
     if (count > 0) {
+      // 2. Listar módulos afectados para referencia
+      const modulosRes = await client.query(`
+        SELECT modulo, COUNT(*) as total
+        FROM public.log_aplicacion
+        WHERE modulo NOT IN (${MODULOS_PERMITIDOS.map((_, i) => `$${i + 1}`).join(', ')})
+        GROUP BY modulo
+        ORDER BY total DESC
+      `, MODULOS_PERMITIDOS);
+      
+      console.log('\n📋 Desglose por módulo a eliminar:');
+      modulosRes.rows.forEach(row => {
+        console.log(`   - ${row.modulo}: ${row.total} registros`);
+      });
+
+      // 3. Eliminar los registros fuera de módulos críticos
       const deleteRes = await client.query(`
         DELETE FROM public.log_aplicacion 
-        WHERE (
-          modulo = 'express' 
-          AND (
-            nivel = 'WARN' 
-            OR (detalle->>'status')::int < 500 
-            OR mensaje LIKE '%Token no proporcionado%' 
-            OR mensaje LIKE '%Token inválido%'
-          )
-        ) OR modulo = 'riesgos'
-          OR evento LIKE 'MATRIZ_%';
-      `);
-      console.log(`Depuración finalizada. Filas eliminadas: ${deleteRes.rowCount}`);
+        WHERE modulo NOT IN (${MODULOS_PERMITIDOS.map((_, i) => `$${i + 1}`).join(', ')})
+      `, MODULOS_PERMITIDOS);
+      
+      console.log(`\n✅ Depuración finalizada. Filas eliminadas: ${deleteRes.rowCount}`);
     } else {
-      console.log('No se encontraron registros de ruido o riesgos para depurar.');
+      console.log('✅ No se encontraron registros de módulos no críticos para depurar.');
     }
+
+    // 4. Mostrar cuántos registros quedan después de la purga
+    const remainingRes = await client.query(
+      'SELECT COUNT(*) as count FROM public.log_aplicacion'
+    );
+    console.log(`\n📊 Registros en log_aplicacion después de la purga: ${remainingRes.rows[0].count}`);
 
     client.release();
   } catch (err) {
-    console.error('Error al depurar la base de datos:', err);
+    console.error('❌ Error al depurar la base de datos:', err);
   } finally {
     await pool.end();
   }

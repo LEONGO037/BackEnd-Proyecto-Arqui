@@ -141,13 +141,34 @@ export const logSeguridad = async ({
     req = null,
     detalle = {},
 }) => {
-    const ipRaw = req ? (req.ip || req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || null) : null;
+    const ipRaw = req ? (req.headers?.["x-forwarded-for"]?.split(",")[0]?.trim() || req.ip || req.socket?.remoteAddress || null) : null;
     const ip = normalizarIP(ipRaw);
     const userAgent = req?.headers?.["user-agent"] || null;
     const ruta = req?.originalUrl || req?.path || null;
     const metodo = req?.method || null;
 
-    const detalleSanitizado = sanitizar(detalle);
+    // -----------------------------------------------------------------------
+    // FILTROS ANTI-RUIDO
+    // Descartar eventos vacíos o generados por bots de monitoreo/scanners
+    // que no aportan valor de seguridad real.
+    // -----------------------------------------------------------------------
+
+    // 1. No registrar TOKEN_NO_PROPORCIONADO si no hay un usuario o email asociado
+    if (evento === "TOKEN_NO_PROPORCIONADO" && !usuario_id && !email) {
+        return;
+    }
+
+    // 2. No registrar HEAD a rutas de monitoreo sin usuario
+    if (metodo === "HEAD" && !usuario_id && !email) {
+        return;
+    }
+
+    // 3. No registrar eventos vacíos o sin información útil
+    if (!evento || (!usuario_id && !email && !ruta)) {
+        return;
+    }
+
+    const detalleSanitizado = sanitizar(detalle ?? {});
 
     consolaSeguro(
         exito ? "INFO" : "WARN",

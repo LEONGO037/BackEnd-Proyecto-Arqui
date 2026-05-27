@@ -3,6 +3,7 @@ import { verificarToken } from "./autenticacion.middleware.js";
 // Lista blanca de endpoints que NO requieren token por ser públicos o flujos de auth
 const EXCLUSIONES = [
     { ruta: /^\/$/, metodo: "GET" },
+    { ruta: /^\/$/, metodo: "HEAD" },    // Monitoreo de uptime (UptimeRobot, etc.)
     { ruta: /^\/api\/autenticacion\/registrar$/, metodo: "POST" },
     { ruta: /^\/api\/autenticacion\/login$/, metodo: "POST" },
     { ruta: /^\/api\/autenticacion\/verificar-codigo$/, metodo: "POST" },

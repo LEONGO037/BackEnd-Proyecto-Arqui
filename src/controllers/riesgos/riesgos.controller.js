@@ -319,6 +319,7 @@ export const getMatriz = async (req, res, next) => {
 export const postItemMatriz = async (req, res, next) => {
     try {
         const nuevo = await crearItemMatriz(req.body);
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -327,6 +328,7 @@ export const postItemMatriz = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: { item_id: nuevo.id },
         }).catch(() => { });
+        */
         res.status(201).json(nuevo);
     } catch (error) {
         next(error);
@@ -343,6 +345,7 @@ export const putItemMatriz = async (req, res, next) => {
         if (!actualizado) {
             return res.status(404).json({ error: "Elemento de la matriz no encontrado" });
         }
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -351,6 +354,7 @@ export const putItemMatriz = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: { item_id: id },
         }).catch(() => { });
+        */
         res.json(actualizado);
     } catch (error) {
         next(error);
@@ -367,6 +371,7 @@ export const deleteItemMatriz = async (req, res, next) => {
         if (!borrado) {
             return res.status(404).json({ error: "Elemento no encontrado" });
         }
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -374,6 +379,7 @@ export const deleteItemMatriz = async (req, res, next) => {
             mensaje: `Elemento de la matriz de riesgos ${id} eliminado`,
             usuario_id: req.usuario.id,
         }).catch(() => { });
+        */
         res.status(204).end();
     } catch (error) {
         next(error);

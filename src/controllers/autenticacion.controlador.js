@@ -10,7 +10,7 @@ import {
   verificarTokenEmail,
 } from "../services/autenticacion.servicio.js";
 import { registrarAuditoriaSegura } from "../services/auditoria.service.js";
-import { logSeguridad, logAplicacion } from "../services/logger.service.js";
+import { logSeguridad } from "../services/logger.service.js";
 import { getRolePermissions } from "../models/permiso.modelo.js";
 
 export const registrar = async (req, res, next) => {
@@ -24,24 +24,24 @@ export const registrar = async (req, res, next) => {
       detalle: { evento: "REGISTRO_USUARIO", email: resultado.usuario?.email },
     });
 
-    // Log de aplicación: creación de usuario es funcionalidad crítica
-    logAplicacion({
-      nivel: "INFO",
-      modulo: "autenticacion",
+    // El registro de usuario se audita en log_seguridad (evento de sesión/acceso)
+    logSeguridad({
       evento: "USUARIO_REGISTRADO",
-      mensaje: "Nuevo usuario estudiante registrado",
+      exito: true,
       usuario_id: resultado.usuario?.id || null,
+      email: resultado.usuario?.email || null,
+      req,
       detalle: { email: resultado.usuario?.email },
     }).catch(() => { });
 
     res.status(201).json(resultado);
   } catch (error) {
-    logAplicacion({
-      nivel: "WARN",
-      modulo: "autenticacion",
+    logSeguridad({
       evento: "REGISTRO_FALLIDO",
-      mensaje: error.message,
-      detalle: { email: req.body?.email },
+      exito: false,
+      email: req.body?.email || null,
+      req,
+      detalle: { razon: error.message },
     }).catch(() => { });
 
     res.status(400).json({ error: error.message });
@@ -218,12 +218,12 @@ export const solicitarReset = async (req, res, next) => {
 
     res.json(resultado);
   } catch (error) {
-    logAplicacion({
-      nivel: "ERROR",
-      modulo: "autenticacion",
+    logSeguridad({
       evento: "RESET_PASSWORD_ERROR",
-      mensaje: "No se pudo enviar correo de reset",
-      detalle: { error: error.message, email: req.body?.email },
+      exito: false,
+      email: req.body?.email || null,
+      req,
+      detalle: { error: error.message },
     }).catch(() => { });
 
     res.status(500).json({ error: "No se pudo enviar el correo de restablecimiento. Intenta nuevamente." });
