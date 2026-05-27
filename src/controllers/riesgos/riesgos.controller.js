@@ -109,6 +109,7 @@ export const postRegistroManual = async (req, res, next) => {
             detectado_por_id: req.usuario.id,
         });
 
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -117,6 +118,7 @@ export const postRegistroManual = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: { registro_id: nuevo.id, catalogo_codigo: cat.codigo },
         }).catch(() => { });
+        */
 
         res.status(201).json(nuevo);
     } catch (error) {
@@ -139,6 +141,7 @@ export const putEstadoRegistro = async (req, res, next) => {
         const actualizado = await actualizarEstadoRegistro(id, estado, req.usuario.id);
         if (!actualizado) return res.status(404).json({ error: "Registro no encontrado" });
 
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -147,6 +150,7 @@ export const putEstadoRegistro = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: { registro_id: id, nuevo_estado: estado },
         }).catch(() => { });
+        */
 
         res.json(actualizado);
     } catch (error) {
@@ -180,6 +184,7 @@ export const postPlanAccion = async (req, res, next) => {
             creado_por_id: req.usuario.id,
         });
 
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -188,6 +193,7 @@ export const postPlanAccion = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: { plan_id: nuevoPlan.id, registro_id },
         }).catch(() => { });
+        */
 
         res.status(201).json(nuevoPlan);
     } catch (error) {
@@ -214,6 +220,7 @@ export const putPlanAccion = async (req, res, next) => {
         });
         if (!actualizado) return res.status(404).json({ error: "Plan no encontrado" });
 
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -222,6 +229,7 @@ export const putPlanAccion = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: { plan_id, nuevo_estado: estado },
         }).catch(() => { });
+        */
 
         res.json(actualizado);
     } catch (error) {
@@ -280,6 +288,7 @@ export const postEjecutarDeteccion = async (req, res, next) => {
     try {
         const resultado = await ejecutarDeteccionCompleta();
 
+        /*
         logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -288,6 +297,7 @@ export const postEjecutarDeteccion = async (req, res, next) => {
             usuario_id: req.usuario.id,
             detalle: resultado,
         }).catch(() => { });
+        */
 
         res.json(resultado);
     } catch (error) {

@@ -59,6 +59,16 @@ const consolaSeguro = (nivel, mensaje, detalle) => {
     else console.log(linea, detalle ?? "");
 };
 
+const normalizarIP = (ipRaw) => {
+    if (!ipRaw) return null;
+    let ip = ipRaw.trim();
+    if (ip === "::1") return "127.0.0.1";
+    if (ip.startsWith("::ffff:")) {
+        return ip.substring(7);
+    }
+    return ip;
+};
+
 // ---------------------------------------------------------------------------
 // Log de Aplicación
 // ---------------------------------------------------------------------------
@@ -82,7 +92,8 @@ export const logAplicacion = async ({
     detalle = {},
     req = null,
 }) => {
-    const ip = req ? (req.ip || req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || null) : null;
+    const ipRaw = req ? (req.ip || req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || null) : null;
+    const ip = normalizarIP(ipRaw);
     const userAgent = req?.headers?.["user-agent"] || null;
 
     const detalleSanitizado = sanitizar(detalle);
@@ -130,7 +141,8 @@ export const logSeguridad = async ({
     req = null,
     detalle = {},
 }) => {
-    const ip = req ? (req.ip || req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || null) : null;
+    const ipRaw = req ? (req.ip || req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || null) : null;
+    const ip = normalizarIP(ipRaw);
     const userAgent = req?.headers?.["user-agent"] || null;
     const ruta = req?.originalUrl || req?.path || null;
     const metodo = req?.method || null;
