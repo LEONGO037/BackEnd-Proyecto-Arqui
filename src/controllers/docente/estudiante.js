@@ -1,5 +1,6 @@
 import { listarEstudiantesCurso,registrarNotaFinal } from "../../services/docente/estudiante.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
+import { logApp } from "../../services/logService.js";
 
 export const verEstudiantesCurso = async (req, res) => {
 
@@ -46,6 +47,10 @@ export const registrarNota = async (req, res) => {
         nota: Number(nota),
       },
     });
+    logApp({ nivel: "INFO", modulo: "docente", evento: "NOTA_FINAL_REGISTRADA",
+      mensaje: `Docente ${docente_id}: nota ${nota} a estudiante ${estudiante_id} en curso ${curso_id}`,
+      usuario_id: docente_id,
+      detalle: { curso_id: Number(curso_id), estudiante_id: Number(estudiante_id), nota: Number(nota) }, req });
 
     res.json({
       mensaje: "Nota registrada correctamente",

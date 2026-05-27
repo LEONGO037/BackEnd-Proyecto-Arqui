@@ -80,7 +80,12 @@ export const logAplicacion = async ({
     mensaje = null,
     usuario_id = null,
     detalle = {},
+    req = null,
 }) => {
+    const ip = req
+        ? (req.ip || req.headers?.["x-forwarded-for"] || req.socket?.remoteAddress || null)
+        : null;
+    const userAgent = req?.headers?.["user-agent"] || null;
     const detalleSanitizado = sanitizar(detalle);
 
     consolaSeguro(nivel, `[${modulo}/${evento}] ${mensaje || ""}`, detalleSanitizado);
@@ -88,9 +93,9 @@ export const logAplicacion = async ({
     try {
         await pool.query(
             `INSERT INTO public.log_aplicacion
-                (nivel, modulo, evento, mensaje, usuario_id, detalle)
-             VALUES ($1, $2, $3, $4, $5, $6)`,
-            [nivel, modulo, evento, mensaje, usuario_id, detalleSanitizado]
+                (nivel, modulo, evento, mensaje, usuario_id, detalle, ip, user_agent)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+            [nivel, modulo, evento, mensaje, usuario_id, detalleSanitizado, ip, userAgent]
         );
     } catch (err) {
         escribirFallback({

@@ -6,6 +6,8 @@ import {
   getReporteInscripciones,
   getReportePagos,
   getReporteAuditoria,
+  getLogsAplicacion,
+  getLogsSeguridad,
   descargarPDFInscripciones,
   descargarPDFPagos,
 } from "../../controllers/reportes/reportes.controller.js";
@@ -16,7 +18,9 @@ router.use(verificarToken);
 router.get("/resumen",           verificarPermiso("reportes:ver"),   getResumenReporte);
 router.get("/inscripciones",     verificarPermiso("reportes:ver"),   getReporteInscripciones);
 router.get("/pagos",             verificarPermiso("reportes:ver"),   getReportePagos);
-router.get("/auditoria",         verificarPermiso("auditoria:ver"),  getReporteAuditoria);
+router.get("/auditoria",         verificarPermiso("logs_aplicacion:ver"),  getReporteAuditoria);
+router.get("/logs-aplicacion",   verificarPermiso("logs_aplicacion:ver"),  getLogsAplicacion);
+router.get("/logs-seguridad",    verificarPermiso("logs:seguridad"), getLogsSeguridad);
 router.get("/inscripciones/pdf", verificarPermiso("reportes:ver"),   descargarPDFInscripciones);
 router.get("/pagos/pdf",         verificarPermiso("reportes:ver"),   descargarPDFPagos);
 

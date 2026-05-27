@@ -11,6 +11,7 @@ import {
   eliminarCalificacion,
 } from "../../models/tareas/tareas.model.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
+import { logApp } from "../../services/logService.js";
 
 // GET /api/tareas/curso/:cursoId — obtener todas las evaluaciones/tareas de un curso
 export const getTareasPorCurso = async (req, res) => {
@@ -59,12 +60,12 @@ export const postCrearTarea = async (req, res) => {
       accion: "CREATE",
       tabla_afectada: "configuracion_evaluacion",
       registro_id: evaluacion.id,
-      detalle: {
-        evento: "CREAR_TAREA",
-        curso_id: evaluacion.curso_id,
-        nombre: evaluacion.nombre,
-      },
+      detalle: { evento: "CREAR_TAREA", curso_id: evaluacion.curso_id, nombre: evaluacion.nombre },
     });
+    logApp({ nivel: "INFO", modulo: "tareas", evento: "EVALUACION_CREADA",
+      mensaje: `Evaluación "${evaluacion.nombre}" creada en curso ${evaluacion.curso_id}`,
+      usuario_id: req.usuario.id,
+      detalle: { evaluacion_id: evaluacion.id, curso_id: evaluacion.curso_id, nombre: evaluacion.nombre }, req });
 
     res.status(201).json({
       mensaje: "Evaluación creada exitosamente",
@@ -95,11 +96,11 @@ export const putActualizarTarea = async (req, res) => {
       accion: "UPDATE",
       tabla_afectada: "configuracion_evaluacion",
       registro_id: evaluacion.id,
-      detalle: {
-        evento: "ACTUALIZAR_TAREA",
-        cambios: req.body,
-      },
+      detalle: { evento: "ACTUALIZAR_TAREA", cambios: req.body },
     });
+    logApp({ nivel: "INFO", modulo: "tareas", evento: "EVALUACION_ACTUALIZADA",
+      mensaje: `Evaluación ${tareaId} actualizada`, usuario_id: req.usuario.id,
+      detalle: { evaluacion_id: evaluacion.id, cambios: req.body }, req });
 
     res.json({
       mensaje: "Evaluación actualizada exitosamente",
@@ -121,10 +122,11 @@ export const deleteEliminarTarea = async (req, res) => {
       accion: "DELETE",
       tabla_afectada: "configuracion_evaluacion",
       registro_id: Number(tareaId),
-      detalle: {
-        evento: "ELIMINAR_TAREA",
-      },
+      detalle: { evento: "ELIMINAR_TAREA" },
     });
+    logApp({ nivel: "WARN", modulo: "tareas", evento: "EVALUACION_ELIMINADA",
+      mensaje: `Evaluación ${tareaId} eliminada`, usuario_id: req.usuario.id,
+      detalle: { evaluacion_id: Number(tareaId) }, req });
 
     res.json({ mensaje: "Evaluación eliminada exitosamente" });
   } catch (err) {
@@ -156,6 +158,10 @@ export const postAsignarCalificacion = async (req, res) => {
         nota: Number(nota),
       },
     });
+    logApp({ nivel: "INFO", modulo: "tareas", evento: "CALIFICACION_ASIGNADA",
+      mensaje: `Nota ${nota} asignada al estudiante_curso ${estudiante_curso_id} en evaluación ${tareaId}`,
+      usuario_id: req.usuario.id,
+      detalle: { evaluacion_id: Number(tareaId), estudiante_curso_id: Number(estudiante_curso_id), nota: Number(nota) }, req });
 
     res.status(201).json({
       mensaje: "Nota asignada exitosamente",
@@ -201,10 +207,11 @@ export const deleteCalificacion = async (req, res) => {
       accion: "DELETE",
       tabla_afectada: "notas",
       registro_id: Number(notaId),
-      detalle: {
-        evento: "ELIMINAR_CALIFICACION",
-      },
+      detalle: { evento: "ELIMINAR_CALIFICACION" },
     });
+    logApp({ nivel: "WARN", modulo: "tareas", evento: "CALIFICACION_ELIMINADA",
+      mensaje: `Calificación ${notaId} eliminada`, usuario_id: req.usuario.id,
+      detalle: { nota_id: Number(notaId) }, req });
 
     res.json({ mensaje: "Nota eliminada exitosamente" });
   } catch (err) {

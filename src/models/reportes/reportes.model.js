@@ -168,6 +168,148 @@ export const obtenerInscripcionesPorCurso = async () => {
 };
 
 /**
+ * Obtiene eventos del log de aplicación (nivel, módulo, evento, ip).
+ */
+export const obtenerLogsAplicacion = async ({
+  limite = 100,
+  nivel,
+  modulo,
+  evento,
+  desde,
+  hasta,
+} = {}) => {
+  const condiciones = [];
+  const valores = [];
+  let idx = 1;
+
+  if (nivel) {
+    condiciones.push(`la.nivel = $${idx}`);
+    valores.push(nivel.toUpperCase());
+    idx++;
+  }
+  if (modulo) {
+    condiciones.push(`la.modulo ILIKE $${idx}`);
+    valores.push(`%${modulo}%`);
+    idx++;
+  }
+  if (evento) {
+    condiciones.push(`la.evento ILIKE $${idx}`);
+    valores.push(`%${evento}%`);
+    idx++;
+  }
+  if (desde) {
+    condiciones.push(`la.fecha >= $${idx}`);
+    valores.push(desde);
+    idx++;
+  }
+  if (hasta) {
+    condiciones.push(`la.fecha <= $${idx}`);
+    valores.push(hasta);
+    idx++;
+  }
+
+  const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+  valores.push(Number(limite));
+
+  const { rows } = await pool.query(
+    `SELECT
+      la.id,
+      la.fecha,
+      la.nivel,
+      la.modulo,
+      la.evento,
+      la.mensaje,
+      la.usuario_id,
+      CONCAT(u.nombre, ' ', u.apellido_paterno) AS usuario_nombre,
+      u.email AS usuario_email,
+      la.ip,
+      la.user_agent,
+      la.detalle
+    FROM public.log_aplicacion la
+    LEFT JOIN public.usuarios u ON u.id = la.usuario_id
+    ${where}
+    ORDER BY la.fecha DESC
+    LIMIT $${idx}`,
+    valores
+  );
+  return rows;
+};
+
+/**
+ * Obtiene eventos del log de seguridad (login, bloqueos, tokens, etc.).
+ */
+export const obtenerLogsSeguridad = async ({
+  limite = 100,
+  evento,
+  exito,
+  ip,
+  email,
+  desde,
+  hasta,
+} = {}) => {
+  const condiciones = [];
+  const valores = [];
+  let idx = 1;
+
+  if (evento) {
+    condiciones.push(`ls.evento ILIKE $${idx}`);
+    valores.push(`%${evento}%`);
+    idx++;
+  }
+  if (exito !== undefined && exito !== null && exito !== "") {
+    condiciones.push(`ls.exito = $${idx}`);
+    valores.push(exito === "true" || exito === true);
+    idx++;
+  }
+  if (ip) {
+    condiciones.push(`ls.ip ILIKE $${idx}`);
+    valores.push(`%${ip}%`);
+    idx++;
+  }
+  if (email) {
+    condiciones.push(`ls.email ILIKE $${idx}`);
+    valores.push(`%${email}%`);
+    idx++;
+  }
+  if (desde) {
+    condiciones.push(`ls.fecha >= $${idx}`);
+    valores.push(desde);
+    idx++;
+  }
+  if (hasta) {
+    condiciones.push(`ls.fecha <= $${idx}`);
+    valores.push(hasta);
+    idx++;
+  }
+
+  const where = condiciones.length ? `WHERE ${condiciones.join(" AND ")}` : "";
+  valores.push(Number(limite));
+
+  const { rows } = await pool.query(
+    `SELECT
+      ls.id,
+      ls.fecha,
+      ls.evento,
+      ls.exito,
+      ls.usuario_id,
+      CONCAT(u.nombre, ' ', u.apellido_paterno) AS usuario_nombre,
+      ls.email,
+      ls.ip,
+      ls.user_agent,
+      ls.ruta,
+      ls.metodo,
+      ls.detalle
+    FROM public.log_seguridad ls
+    LEFT JOIN public.usuarios u ON u.id = ls.usuario_id
+    ${where}
+    ORDER BY ls.fecha DESC
+    LIMIT $${idx}`,
+    valores
+  );
+  return rows;
+};
+
+/**
  * Obtiene registros de auditoria del sistema para el panel administrativo.
  * @param {Object} filtros
  * @param {number} [filtros.limite=100] - Maximo de registros a devolver.

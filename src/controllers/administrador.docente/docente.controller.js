@@ -4,6 +4,7 @@ import {
   actualizarDocentePorAdmin,
 } from "../../services/administrador.docente/docente.service.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
+import { logApp } from "../../services/logService.js";
 
 export const crearDocenteAdmin = async (req, res, next) => {
   try {
@@ -16,6 +17,9 @@ export const crearDocenteAdmin = async (req, res, next) => {
       registro_id: docente.id,
       detalle: { evento: "CREAR_DOCENTE", docente_email: docente.email },
     });
+    logApp({ nivel: "INFO", modulo: "admin.docentes", evento: "DOCENTE_CREADO",
+      mensaje: `Docente creado: ${docente.email}`, usuario_id: req.usuario.id,
+      detalle: { docente_id: docente.id, email: docente.email }, req });
 
     res.status(201).json({ mensaje: "Docente creado correctamente", docente });
   } catch (err) { next(err); }
@@ -44,6 +48,9 @@ export const actualizarDocenteAdmin = async (req, res, next) => {
       registro_id: docenteId,
       detalle: { evento: "ACTUALIZAR_DOCENTE", docente_id: docenteId },
     });
+    logApp({ nivel: "INFO", modulo: "admin.docentes", evento: "DOCENTE_ACTUALIZADO",
+      mensaje: `Docente ${docenteId} actualizado`, usuario_id: req.usuario.id,
+      detalle: { docente_id: docenteId }, req });
 
     res.json({ mensaje: "Docente actualizado correctamente", docente: docenteActualizado });
   } catch (err) {

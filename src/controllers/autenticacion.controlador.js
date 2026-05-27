@@ -10,6 +10,7 @@ import {
 } from "../services/autenticacion.servicio.js";
 import { registrarAuditoriaSegura } from "../services/auditoria.service.js";
 import { logSeguridad, logAplicacion } from "../services/logger.service.js";
+import { logSeg } from "../services/logService.js";
 import { getRolePermissions } from "../models/permiso.modelo.js";
 
 export const registrar = async (req, res, next) => {
@@ -123,8 +124,12 @@ export const reenviarCodigo = async (req, res, next) => {
     const { email } = req.body;
     if (!email) return res.status(400).json({ error: "Email requerido" });
     const resultado = await reenviarCodigoVerificacion(email);
+    logSeg({ evento: "CODIGO_VERIFICACION_REENVIADO", exito: true, email, req,
+      detalle: { email } });
     res.json(resultado);
   } catch (error) {
+    logSeg({ evento: "CODIGO_VERIFICACION_REENVIADO", exito: false, email: req.body?.email, req,
+      detalle: { error: error.message } });
     res.status(400).json({ error: error.message });
   }
 };
@@ -206,8 +211,11 @@ export const verificarCodigoReset = async (req, res, next) => {
     const { email, codigo } = req.body;
     if (!email || !codigo) return res.status(400).json({ error: "Email y código son requeridos" });
     const resultado = await verificarCodigoResetServicio(email, codigo);
+    logSeg({ evento: "CODIGO_RESET_VERIFICADO", exito: true, email, req });
     res.json(resultado);
   } catch (error) {
+    logSeg({ evento: "CODIGO_RESET_VERIFICADO", exito: false, email: req.body?.email, req,
+      detalle: { error: error.message } });
     res.status(400).json({ error: error.message });
   }
 };

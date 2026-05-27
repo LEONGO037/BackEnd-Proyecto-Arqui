@@ -6,6 +6,7 @@ import {
   obtenerResumenCursosConInscritos,
 } from "../../models/inscripcion/inscripcion.model.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
+import { logAplicacion } from "../../services/logger.service.js";
 
 // GET /api/inscripciones/mis-inscripciones
 export const getMisInscripciones = async (req, res, next) => {
@@ -33,6 +34,10 @@ export const postInscribir = async (req, res, next) => {
         inscripcion_id: resultado.inscripcion_id,
       },
     });
+    logAplicacion({ nivel: "INFO", modulo: "inscripciones", evento: "ESTUDIANTE_INSCRITO",
+      mensaje: `Estudiante ${req.usuario.id} inscrito en curso ${curso_id}`,
+      usuario_id: req.usuario.id,
+      detalle: { curso_id: Number(curso_id), inscripcion_id: resultado.inscripcion_id }, req }).catch(() => {});
 
     res.status(201).json({ mensaje: "Inscripción exitosa", data: resultado });
   } catch (err) { next(err); }
@@ -50,6 +55,10 @@ export const deleteDesinscribir = async (req, res, next) => {
       tabla_afectada: "estudiante_curso",
       detalle: { evento: "DESINSCRIPCION_CURSO", curso_id: cursoId },
     });
+    logAplicacion({ nivel: "WARN", modulo: "inscripciones", evento: "ESTUDIANTE_DESINSCRITO",
+      mensaje: `Estudiante ${req.usuario.id} dado de baja del curso ${cursoId}`,
+      usuario_id: req.usuario.id,
+      detalle: { curso_id: cursoId }, req }).catch(() => {});
 
     res.json({ mensaje: "Baja exitosa" });
   } catch (err) { next(err); }

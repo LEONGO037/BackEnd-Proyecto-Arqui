@@ -1,6 +1,7 @@
 // src/controllers/cursos/cursos.controller.js
 import { CursosModel } from "../../models/cursos/cursos.model.js";
 import { registrarAuditoria } from "../../services/auditoria.service.js";
+import { logAplicacion } from "../../services/logger.service.js";
 
 /**
  * GET /api/cursos
@@ -28,6 +29,9 @@ export const deleteCursoController = async (req, res) => {
         detalle: {},
       });
     }
+    logAplicacion({ nivel: "WARN", modulo: "cursos", evento: "CURSO_ELIMINADO",
+      mensaje: `Curso ${id} eliminado`, usuario_id: req.usuario?.id,
+      detalle: { curso_id: id }, req }).catch(() => {});
     res.json({ mensaje: 'Curso eliminado correctamente' });
   } catch (err) {
     res.status(err.message === 'Curso no encontrado' ? 404 : 500).json({ error: err.message });
@@ -81,8 +85,6 @@ export const createCurso = async (req, res) => {
       prerrequisitos,
     });
 
-    // Auditoría
-    // Se asume que el ID del usuario viene en req.usuario.id desde el middleware verificarToken
     if (req.usuario && req.usuario.id) {
       await registrarAuditoria({
         usuario_id: req.usuario.id,
@@ -95,6 +97,9 @@ export const createCurso = async (req, res) => {
         },
       });
     }
+    logAplicacion({ nivel: "INFO", modulo: "cursos", evento: "CURSO_CREADO",
+      mensaje: `Curso creado: ${nuevoCurso.nombre}`, usuario_id: req.usuario?.id,
+      detalle: { curso_id: nuevoCurso.id, nombre: nuevoCurso.nombre, costo }, req }).catch(() => {});
 
     res.status(201).json(nuevoCurso);
   } catch (err) {
@@ -131,11 +136,12 @@ export const actualizarMinimoEstudiantesCurso = async (req, res) => {
         accion: "UPDATE",
         tabla_afectada: "cursos",
         registro_id: cursoActualizado.id,
-        detalle: {
-          minimo_estudiantes: cursoActualizado.minimo_estudiantes,
-        },
+        detalle: { minimo_estudiantes: cursoActualizado.minimo_estudiantes },
       });
     }
+    logAplicacion({ nivel: "INFO", modulo: "cursos", evento: "MINIMO_ESTUDIANTES_ACTUALIZADO",
+      mensaje: `Curso ${cursoId}: mínimo ajustado a ${minimo}`, usuario_id: req.usuario?.id,
+      detalle: { curso_id: cursoId, minimo_estudiantes: minimo }, req }).catch(() => {});
 
     res.json(cursoActualizado);
   } catch (err) {
@@ -189,7 +195,6 @@ export const updateCurso = async (req, res) => {
 
     const cursoActualizado = await CursosModel.update(id, req.body);
 
-    // Auditoría
     await registrarAuditoria({
       usuario_id: req.usuario.id,
       accion: "UPDATE",
@@ -197,6 +202,9 @@ export const updateCurso = async (req, res) => {
       registro_id: id,
       detalle: req.body
     });
+    logAplicacion({ nivel: "INFO", modulo: "cursos", evento: "CURSO_ACTUALIZADO",
+      mensaje: `Curso ${id} actualizado`, usuario_id: req.usuario?.id,
+      detalle: { curso_id: id, cambios: req.body }, req }).catch(() => {});
 
     res.json({
       mensaje: "Curso actualizado correctamente",
@@ -226,6 +234,9 @@ export const updatePrerrequisitos = async (req,res)=>{
       registro_id: id,
       detalle: { prerrequisitos }
     });
+    logAplicacion({ nivel: "INFO", modulo: "cursos", evento: "PRERREQUISITOS_ACTUALIZADOS",
+      mensaje: `Prerrequisitos del curso ${id} actualizados`, usuario_id: req.usuario?.id,
+      detalle: { curso_id: id, prerrequisitos }, req }).catch(() => {});
 
     res.json({
       mensaje: "Prerrequisitos actualizados",

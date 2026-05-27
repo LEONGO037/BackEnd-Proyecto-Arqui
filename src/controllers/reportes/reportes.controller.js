@@ -5,6 +5,8 @@ import {
   obtenerResumenEstadisticas,
   obtenerInscripcionesPorCurso,
   obtenerRegistrosAuditoria,
+  obtenerLogsAplicacion,
+  obtenerLogsSeguridad,
 } from "../../models/reportes/reportes.model.js";
 import {
   generarPDFInscripciones,
@@ -12,6 +14,7 @@ import {
 } from "../../services/reportes/reportes.pdf.service.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
 import { logger } from "../../services/logger.service.js";
+import { logApp } from "../../services/logService.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -127,6 +130,61 @@ export const getReporteAuditoria = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/reportes/logs-aplicacion
+ * Eventos del log de aplicación con IP (requiere auditoria:ver).
+ */
+export const getLogsAplicacion = async (req, res) => {
+  try {
+    const limiteNum = Number(req.query.limite);
+    const limite = Number.isInteger(limiteNum) && limiteNum > 0
+      ? Math.min(limiteNum, 500) : 100;
+
+    const filtros = {
+      limite,
+      nivel: req.query.nivel || undefined,
+      modulo: req.query.modulo || undefined,
+      evento: req.query.evento || undefined,
+      desde: req.query.desde ? new Date(req.query.desde) : undefined,
+      hasta: req.query.hasta ? new Date(req.query.hasta + "T23:59:59") : undefined,
+    };
+
+    const datos = await obtenerLogsAplicacion(filtros);
+    res.json({ total: datos.length, datos });
+  } catch (err) {
+    logger.error("Error getLogsAplicacion:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
+/**
+ * GET /api/reportes/logs-seguridad
+ * Eventos del log de seguridad con IP (requiere logs:seguridad).
+ */
+export const getLogsSeguridad = async (req, res) => {
+  try {
+    const limiteNum = Number(req.query.limite);
+    const limite = Number.isInteger(limiteNum) && limiteNum > 0
+      ? Math.min(limiteNum, 500) : 100;
+
+    const filtros = {
+      limite,
+      evento: req.query.evento || undefined,
+      exito: req.query.exito !== undefined ? req.query.exito : undefined,
+      ip: req.query.ip || undefined,
+      email: req.query.email || undefined,
+      desde: req.query.desde ? new Date(req.query.desde) : undefined,
+      hasta: req.query.hasta ? new Date(req.query.hasta + "T23:59:59") : undefined,
+    };
+
+    const datos = await obtenerLogsSeguridad(filtros);
+    res.json({ total: datos.length, datos });
+  } catch (err) {
+    logger.error("Error getLogsSeguridad:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+};
+
 // ─── Endpoints PDF ────────────────────────────────────────────────────────────
 
 /**
@@ -150,6 +208,9 @@ export const descargarPDFInscripciones = async (req, res) => {
       "Content-Length": pdfBuffer.length,
     });
 
+    logApp({ nivel: "INFO", modulo: "reportes", evento: "PDF_INSCRIPCIONES_DESCARGADO",
+      mensaje: "Reporte de inscripciones PDF descargado",
+      usuario_id: req.usuario?.id, detalle: { filtros }, req });
     res.send(pdfBuffer);
   } catch (err) {
     logger.error("Error descargarPDFInscripciones:", err.message);
@@ -178,6 +239,9 @@ export const descargarPDFPagos = async (req, res) => {
       "Content-Length": pdfBuffer.length,
     });
 
+    logApp({ nivel: "INFO", modulo: "reportes", evento: "PDF_PAGOS_DESCARGADO",
+      mensaje: "Reporte de pagos PDF descargado",
+      usuario_id: req.usuario?.id, detalle: { filtros }, req });
     res.send(pdfBuffer);
   } catch (err) {
     logger.error("Error descargarPDFPagos:", err.message);

@@ -3,6 +3,7 @@ import { crearOrden, capturarOrden } from '../../services/paypal.service.js';
 import { inscribirEstudianteEnCurso, inscribirEstudianteEnCursos } from '../../models/inscripcion/inscripcion.model.js';
 import * as PagosModel from '../../models/pagos/pagos.model.js';
 import { registrarAuditoriaSegura } from '../../services/auditoria.service.js';
+import { logAplicacion } from '../../services/logger.service.js';
 
 export const getConfig = (req, res) => {
   res.json({ clientId: process.env.PAYPAL_CLIENT_ID });
@@ -48,6 +49,10 @@ export const postCrearOrden = async (req, res) => {
         monto_usd: Number(montoUSD),
       },
     });
+    logAplicacion({ nivel: "INFO", modulo: "pagos", evento: "ORDEN_PAYPAL_CREADA",
+      mensaje: `Orden PayPal creada por usuario ${req.usuario.id}: USD ${montoUSD}`,
+      usuario_id: req.usuario.id,
+      detalle: { order_id: orden.id, cursos: ids, monto_usd: Number(montoUSD) }, req }).catch(() => {});
 
     res.json({
       orderID: orden.id,
@@ -125,6 +130,10 @@ export const postCapturarOrden = async (req, res) => {
         pagos_registrados: detallesPago.length,
       },
     });
+    logAplicacion({ nivel: "INFO", modulo: "pagos", evento: "PAGO_COMPLETADO",
+      mensaje: `Pago completado por usuario ${estudianteId}: ${detallesPago.length} pago(s)`,
+      usuario_id: estudianteId,
+      detalle: { transaccion: captura.id, cursos: ids, pagos_registrados: detallesPago.length }, req }).catch(() => {});
 
     res.json({
       mensaje: ids.length === 1

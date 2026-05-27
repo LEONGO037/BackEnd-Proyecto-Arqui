@@ -6,6 +6,7 @@ import {
   obtenerMetricas
 } from "../../services/docente/curso.js";
 import { registrarAuditoria } from "../../services/auditoria.service.js";
+import { logApp } from "../../services/logService.js";
 
 export const verMisCursos = async (req, res) => {
   try {
@@ -45,6 +46,9 @@ export const actualizarEstado = async (req, res) => {
         estado_nuevo: resultado?.estado || estado,
       },
     });
+    logApp({ nivel: "INFO", modulo: "docente", evento: "ESTADO_CURSO_ACTUALIZADO",
+      mensaje: `Docente ${usuario_id}: curso ${curso_id} → ${estado}`,
+      usuario_id, detalle: { curso_id: Number(curso_id), estado }, req });
 
     res.json({
       mensaje: "Estado actualizado correctamente",
@@ -79,6 +83,10 @@ export const actualizarNotas = async (req, res) => {
     const { notas } = req.body; // Array de { estudiante_curso_id, nota_final }
 
     const resultado = await guardarNotas(usuario_id, parseInt(curso_id), notas);
+
+    logApp({ nivel: "INFO", modulo: "docente", evento: "NOTAS_GUARDADAS",
+      mensaje: `Docente ${usuario_id}: notas guardadas en curso ${curso_id} (${notas?.length || 0} registros)`,
+      usuario_id, detalle: { curso_id: parseInt(curso_id), cantidad: notas?.length || 0 }, req });
 
     res.json({
       mensaje: "Calificaciones guardadas correctamente",
