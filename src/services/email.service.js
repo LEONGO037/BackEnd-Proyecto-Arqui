@@ -1,55 +1,59 @@
-import nodemailer from 'nodemailer';
-import dns from 'dns';
+import { Resend } from 'resend';
 import { logger } from './logger.service.js';
 
-// Configuración de Nodemailer (SMTP) optimizada para producción
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_PORT === '465', // false para 587 (STARTTLS)
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD,
-  },
-  // Forzar IPv4 para evitar el error ENETUNREACH en ciertos entornos (Docker/Render/Railway)
-  dnsLookup: (hostname, options, callback) => {
-    dns.lookup(hostname, { family: 4 }, callback);
-  },
-  tls: {
-    // Evita errores de certificado que pueden ocurrir en entornos de red específicos
-    rejectUnauthorized: false
-  }
-});
+// Resend (HTTP API) — funciona en plataformas que bloquean SMTP (Render, Vercel, etc).
+const resend = process.env.EMAIL_RESEND_API_KEY
+  ? new Resend(process.env.EMAIL_RESEND_API_KEY)
+  : null;
 
-const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USER}>`;
+// Normaliza el FROM al formato RFC 5322. Resend rechaza "Nombre email@x.com"
+// sin angle brackets, así que lo arreglamos transparentemente.
+const buildFrom = () => {
+  const raw = process.env.EMAIL_FROM || 'onboarding@resend.dev';
+  if (raw.includes('<') || !raw.includes(' ')) return raw;
+  const parts = raw.trim().split(/\s+/);
+  const email = parts.pop();
+  const name = parts.join(' ');
+  return `${name} <${email}>`;
+};
 
 /**
- * Envía un correo electrónico utilizando Nodemailer (SMTP)
- * @param {Object} options - Opciones del correo
- * @param {string|string[]} options.to - Destinatario(s)
- * @param {string} options.subject - Asunto
- * @param {string} options.html - Contenido HTML
- * @param {Array} [options.attachments] - Adjuntos (opcional)
+ * Envía un correo electrónico usando Resend (HTTP).
+ * @param {Object} options
+ * @param {string|string[]} options.to
+ * @param {string} options.subject
+ * @param {string} options.html
+ * @param {Array} [options.attachments]  Adjuntos: [{ filename, content }]
  */
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    logger.warn('Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
+  if (!resend) {
+    logger.warn('Configuración de correo incompleta (EMAIL_RESEND_API_KEY faltante).');
     throw new Error('Servicio de correo no configurado');
   }
 
-  const mailOptions = {
-    from: FROM,
-    to: Array.isArray(to) ? to.join(', ') : to,
+  const payload = {
+    from: buildFrom(),
+    to: Array.isArray(to) ? to : [to],
     subject,
     html,
-    attachments: attachments || [],
   };
 
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    payload.attachments = attachments.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+    }));
+  }
+
   try {
-    const info = await transporter.sendMail(mailOptions);
-    return info;
+    const { data, error } = await resend.emails.send(payload);
+    if (error) {
+      logger.error('Resend rechazó el envío', error.message || JSON.stringify(error));
+      throw new Error(error.message || 'Resend error');
+    }
+    return data;
   } catch (error) {
-    logger.error('Error al enviar correo con Nodemailer', error.message);
+    logger.error('Error al enviar correo con Resend', error.message);
     throw error;
   }
 };
