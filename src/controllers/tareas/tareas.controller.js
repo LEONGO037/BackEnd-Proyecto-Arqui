@@ -12,30 +12,39 @@ import {
 } from "../../models/tareas/tareas.model.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
 
+// Devuelve el id como entero positivo o null si no es válido.
+// Evita 500 en consultas con ids tipo "curso" o "estudiante".
+const parseIdParam = (valor) => {
+  const n = Number(valor);
+  return Number.isInteger(n) && n > 0 ? n : null;
+};
+
 // GET /api/tareas/curso/:cursoId — obtener todas las evaluaciones/tareas de un curso
-export const getTareasPorCurso = async (req, res) => {
+export const getTareasPorCurso = async (req, res, next) => {
   try {
-    const { cursoId } = req.params;
-    const evaluaciones = await obtenerEvaluacionesPorCurso(Number(cursoId));
+    const cursoId = parseIdParam(req.params.cursoId);
+    if (cursoId === null) return res.status(400).json({ error: "ID inválido" });
+    const evaluaciones = await obtenerEvaluacionesPorCurso(cursoId);
 
     res.json(evaluaciones);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
 // GET /api/tareas/:tareaId — obtener una evaluación/tarea específica
-export const getTareaPorId = async (req, res) => {
+export const getTareaPorId = async (req, res, next) => {
   try {
-    const { tareaId } = req.params;
-    const evaluacion = await obtenerEvaluacionPorId(Number(tareaId));
+    const tareaId = parseIdParam(req.params.tareaId);
+    if (tareaId === null) return res.status(400).json({ error: "ID inválido" });
+    const evaluacion = await obtenerEvaluacionPorId(tareaId);
     if (!evaluacion) {
       return res.status(404).json({ error: "Evaluación no encontrada" });
     }
 
     res.json(evaluacion);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
@@ -167,26 +176,28 @@ export const postAsignarCalificacion = async (req, res) => {
 };
 
 // GET /api/tareas/:tareaId/calificaciones — obtener todas las notas de una evaluación (solo docentes)
-export const getCalificacionesPorTarea = async (req, res) => {
+export const getCalificacionesPorTarea = async (req, res, next) => {
   try {
-    const { tareaId } = req.params;
-    const calificaciones = await obtenerCalificacionesPorEvaluacion(Number(tareaId));
+    const tareaId = parseIdParam(req.params.tareaId);
+    if (tareaId === null) return res.status(400).json({ error: "ID inválido" });
+    const calificaciones = await obtenerCalificacionesPorEvaluacion(tareaId);
 
     res.json(calificaciones);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 
 // GET /api/tareas/estudiante/:estudianteCursoId — obtener notas de un estudiante en un curso
-export const getCalificacionesEstudiante = async (req, res) => {
+export const getCalificacionesEstudiante = async (req, res, next) => {
   try {
-    const { estudianteCursoId } = req.params;
-    const calificaciones = await obtenerCalificacionesEstudiantePorCurso(Number(estudianteCursoId));
+    const estudianteCursoId = parseIdParam(req.params.estudianteCursoId);
+    if (estudianteCursoId === null) return res.status(400).json({ error: "ID inválido" });
+    const calificaciones = await obtenerCalificacionesEstudiantePorCurso(estudianteCursoId);
 
     res.json(calificaciones);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 

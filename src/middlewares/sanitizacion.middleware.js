@@ -111,6 +111,24 @@ const CAMPOS_SENSIBLES_SALIDA = new Set([
     "reset_token_expira",
 ]);
 
+// Campos cuyo contenido es una dirección IP. Si la IP es privada
+// (RFC 1918) se enmascara para no exponer la topología interna.
+const CAMPOS_IP = new Set(["ip", "ip_origen", "ip_cliente", "remote_ip"]);
+
+// Reemplaza los dos últimos octetos por "x" en IPv4 privadas.
+// Ej: 192.168.1.99 → 192.168.x.x   10.0.5.7 → 10.0.x.x
+const enmascararIPPrivada = (valor) => {
+    if (typeof valor !== "string") return valor;
+    return valor.replace(
+        /\b(10|127|192\.168|172\.(1[6-9]|2\d|3[01]))(\.\d{1,3}){2,3}\b/g,
+        (match) => {
+            const partes = match.split(".");
+            if (partes.length !== 4) return match;
+            return `${partes[0]}.${partes[1]}.x.x`;
+        }
+    );
+};
+
 const filtrarSalida = (obj, depth = 0) => {
     if (depth > MAX_DEPTH || obj === null || obj === undefined) return obj;
 
@@ -122,7 +140,9 @@ const filtrarSalida = (obj, depth = 0) => {
         const limpio = {};
         for (const [clave, valor] of Object.entries(obj)) {
             if (CAMPOS_SENSIBLES_SALIDA.has(clave)) continue; // omitir
-            if (typeof valor === "object" && valor !== null) {
+            if (CAMPOS_IP.has(clave.toLowerCase()) && typeof valor === "string") {
+                limpio[clave] = enmascararIPPrivada(valor);
+            } else if (typeof valor === "object" && valor !== null) {
                 limpio[clave] = filtrarSalida(valor, depth + 1);
             } else {
                 limpio[clave] = valor;
