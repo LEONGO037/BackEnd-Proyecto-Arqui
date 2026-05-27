@@ -1,6 +1,5 @@
-// src/controllers/cursos/cursos.controller.js
 import { CursosModel } from "../../models/cursos/cursos.model.js";
-import { registrarAuditoria } from "../../services/auditoria.service.js";
+import { registrarAuditoria, diffObjetos } from "../../services/auditoria.service.js";
 import { logAplicacion } from "../../services/logger.service.js";
 
 /**
@@ -201,20 +200,24 @@ export const validarInscripcionCurso = async (req, res, next) => {
   }
 };
 export const updateCurso = async (req, res) => {
-
   try {
-
     const { id } = req.params;
 
-    const cursoActualizado = await CursosModel.update(id, req.body);
+    const cursoAnterior = await CursosModel.getById(id);
+    if (!cursoAnterior) {
+      return res.status(404).json({ error: "Curso no encontrado" });
+    }
 
-    // Auditoría
+    const cursoActualizado = await CursosModel.update(id, req.body);
+    const diff = diffObjetos(cursoAnterior, cursoActualizado);
+
+    // Auditoría diferencial
     await registrarAuditoria({
       usuario_id: req.usuario.id,
       accion: "UPDATE",
       tabla_afectada: "cursos",
       registro_id: id,
-      detalle: req.body
+      detalle: diff
     });
 
     logAplicacion({
@@ -223,14 +226,14 @@ export const updateCurso = async (req, res) => {
       evento: "CURSO_EDITADO",
       mensaje: `Curso ID ${id} actualizado`,
       usuario_id: req.usuario.id,
-      detalle: { id, cambios: req.body },
+      detalle: { id, cambios: diff.cambios },
+      req
     }).catch(() => {});
 
     res.json({
       mensaje: "Curso actualizado correctamente",
       data: cursoActualizado
     });
-
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
