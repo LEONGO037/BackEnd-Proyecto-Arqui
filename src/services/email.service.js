@@ -1,59 +1,80 @@
-import { Resend } from 'resend';
 import { logger } from './logger.service.js';
 
-// Resend (HTTP API) — funciona en plataformas que bloquean SMTP (Render, Vercel, etc).
-const resend = process.env.EMAIL_RESEND_API_KEY
-  ? new Resend(process.env.EMAIL_RESEND_API_KEY)
-  : null;
+// Brevo (ex-Sendinblue) v3 API vía fetch nativo. Sin dependencias.
+// HTTPS, sin SMTP → funciona en Render sin issues.
+const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
 
-// Normaliza el FROM al formato RFC 5322. Resend rechaza "Nombre email@x.com"
-// sin angle brackets, así que lo arreglamos transparentemente.
-const buildFrom = () => {
-  const raw = process.env.EMAIL_FROM || 'onboarding@resend.dev';
-  if (raw.includes('<') || !raw.includes(' ')) return raw;
-  const parts = raw.trim().split(/\s+/);
-  const email = parts.pop();
-  const name = parts.join(' ');
-  return `${name} <${email}>`;
+// Parsea "Nombre <email@x.com>" o "email@x.com" en { name, email }
+const parseFrom = () => {
+  const raw = process.env.EMAIL_FROM || '';
+  const match = raw.match(/^(.*?)\s*<(.+?)>\s*$/);
+  if (match) return { name: match[1].trim() || 'College X Nexus', email: match[2].trim() };
+  return { name: 'College X Nexus', email: raw.trim() };
+};
+
+// Convierte un attachment de Nodemailer { filename, content } al formato Brevo.
+const toBrevoAttachment = (a) => {
+  let contentBase64;
+  if (Buffer.isBuffer(a.content)) contentBase64 = a.content.toString('base64');
+  else if (typeof a.content === 'string') contentBase64 = Buffer.from(a.content).toString('base64');
+  else contentBase64 = '';
+  return { name: a.filename, content: contentBase64 };
 };
 
 /**
- * Envía un correo electrónico usando Resend (HTTP).
+ * Envía un correo electrónico vía Brevo HTTP API.
  * @param {Object} options
  * @param {string|string[]} options.to
  * @param {string} options.subject
  * @param {string} options.html
- * @param {Array} [options.attachments]  Adjuntos: [{ filename, content }]
+ * @param {Array} [options.attachments]
  */
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
-  if (!resend) {
-    logger.warn('Configuración de correo incompleta (EMAIL_RESEND_API_KEY faltante).');
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    logger.warn('Configuración de correo incompleta (BREVO_API_KEY faltante).');
     throw new Error('Servicio de correo no configurado');
   }
 
+  const sender = parseFrom();
+  if (!sender.email) {
+    logger.warn('EMAIL_FROM no configurado correctamente.');
+    throw new Error('Email remitente no configurado');
+  }
+
+  const recipients = (Array.isArray(to) ? to : [to]).map((e) => ({ email: e }));
+
   const payload = {
-    from: buildFrom(),
-    to: Array.isArray(to) ? to : [to],
+    sender,
+    to: recipients,
     subject,
-    html,
+    htmlContent: html,
   };
 
   if (Array.isArray(attachments) && attachments.length > 0) {
-    payload.attachments = attachments.map((a) => ({
-      filename: a.filename,
-      content: a.content,
-    }));
+    payload.attachment = attachments.map(toBrevoAttachment);
   }
 
   try {
-    const { data, error } = await resend.emails.send(payload);
-    if (error) {
-      logger.error('Resend rechazó el envío', error.message || JSON.stringify(error));
-      throw new Error(error.message || 'Resend error');
+    const respuesta = await fetch(BREVO_URL, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.text();
+      logger.error(`Brevo rechazó el envío (${respuesta.status})`, cuerpo);
+      throw new Error(`Brevo error ${respuesta.status}: ${cuerpo.slice(0, 200)}`);
     }
-    return data;
+
+    return await respuesta.json();
   } catch (error) {
-    logger.error('Error al enviar correo con Resend', error.message);
+    logger.error('Error al enviar correo con Brevo', error.message);
     throw error;
   }
 };
