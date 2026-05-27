@@ -129,8 +129,15 @@ const enmascararIPPrivada = (valor) => {
     );
 };
 
+// Tipos que NO deben recorrerse como plain object — si recorremos un Date
+// con Object.entries(), retornaría [] y reemplazaríamos la fecha por {}.
+const esObjetoEspecial = (v) =>
+    v instanceof Date ||
+    (typeof Buffer !== "undefined" && Buffer.isBuffer(v));
+
 const filtrarSalida = (obj, depth = 0) => {
     if (depth > MAX_DEPTH || obj === null || obj === undefined) return obj;
+    if (esObjetoEspecial(obj)) return obj;
 
     if (Array.isArray(obj)) {
         return obj.map((item) => filtrarSalida(item, depth + 1));
@@ -142,7 +149,7 @@ const filtrarSalida = (obj, depth = 0) => {
             if (CAMPOS_SENSIBLES_SALIDA.has(clave)) continue; // omitir
             if (CAMPOS_IP.has(clave.toLowerCase()) && typeof valor === "string") {
                 limpio[clave] = enmascararIPPrivada(valor);
-            } else if (typeof valor === "object" && valor !== null) {
+            } else if (valor !== null && typeof valor === "object" && !esObjetoEspecial(valor)) {
                 limpio[clave] = filtrarSalida(valor, depth + 1);
             } else {
                 limpio[clave] = valor;
