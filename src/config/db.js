@@ -11,16 +11,33 @@ const pool = new Pool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
-  // 👇 CORRECCIÓN 1: Forzamos IPv4 para evitar el ETIMEDOUT
+  // Forzamos IPv4 para evitar el ETIMEDOUT
   family: 4,
-  // 👇 CORRECCIÓN 2: Supabase requiere SSL (conexión segura)
+  // Supabase requiere SSL
   ssl: {
-    rejectUnauthorized: false, // Esto permite conectar aunque el certificado no esté verificado localmente
+    rejectUnauthorized: false,
   },
 });
 
+// Validamos conexión sin importar el logger (evita import circular).
 pool.query("SELECT 1")
-  .then(() => console.log("✅ Conectado a Supabase (PostgreSQL)"))
-  .catch(err => console.error("❌ Error conexión BD:", err));
+  .then(() => {
+    if (process.env.NODE_ENV !== "production" && process.env.NODE_ENV !== "test") {
+      console.log("Conectado a Supabase (PostgreSQL)");
+    }
+  })
+  .catch(() => {
+    // Solo informa que falló sin imprimir el error completo en consola
+    if (process.env.NODE_ENV !== "production") {
+      console.error("Error de conexión a la base de datos");
+    }
+  });
+
+// Errores del pool en runtime (idle clients, etc.)
+pool.on("error", () => {
+  if (process.env.NODE_ENV !== "production") {
+    console.error("Error inesperado en cliente inactivo del pool");
+  }
+});
 
 export default pool;

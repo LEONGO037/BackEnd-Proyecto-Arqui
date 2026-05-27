@@ -1,4 +1,5 @@
 import pool from "../config/db.js";
+import { logger } from "./logger.service.js";
 
 /**
  * Registra un evento en la tabla de auditoría.
@@ -23,7 +24,7 @@ export const registrarAuditoria = async ({ usuario_id, accion, tabla_afectada, r
         const { rows } = await pool.query(query, values);
         return rows[0];
     } catch (error) {
-        console.error("Error al registrar auditoría:", error);
+        logger.error("Error al registrar auditoría", error);
         // Lanzar un error descriptivo para que el endpoint pueda manejarlo
         throw new Error(`Error en el servicio de auditoría: ${error.message}`);
     }
@@ -36,7 +37,7 @@ export const registrarAuditoriaSegura = async (payload) => {
     try {
         return await registrarAuditoria(payload);
     } catch (error) {
-        console.error("Auditoria no registrada (continuando flujo):", error.message);
+        logger.warn("Auditoria no registrada (continuando flujo)", error.message);
         return null;
     }
 };

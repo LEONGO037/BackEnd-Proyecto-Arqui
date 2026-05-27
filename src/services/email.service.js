@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import dns from 'dns';
+import { logger } from './logger.service.js';
 
 // Configuración de Nodemailer (SMTP) optimizada para producción
 const transporter = nodemailer.createTransport({
@@ -32,7 +33,7 @@ const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USE
  */
 export const enviarEmail = async ({ to, subject, html, attachments }) => {
   if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️ Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
+    logger.warn('Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
     throw new Error('Servicio de correo no configurado');
   }
 
@@ -48,7 +49,7 @@ export const enviarEmail = async ({ to, subject, html, attachments }) => {
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    console.error('❌ Error al enviar correo con Nodemailer:', error.message);
+    logger.error('Error al enviar correo con Nodemailer', error.message);
     throw error;
   }
 };

@@ -11,6 +11,7 @@ import {
   generarPDFPagos,
 } from "../../services/reportes/reportes.pdf.service.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
+import { logger } from "../../services/logger.service.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -60,8 +61,8 @@ export const getResumenReporte = async (req, res) => {
       inscripciones_por_curso: porCurso,
     });
   } catch (err) {
-    console.error("Error getResumenReporte:", err.message);
-    res.status(500).json({ error: err.message });
+    logger.error("Error getResumenReporte:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -76,8 +77,8 @@ export const getReporteInscripciones = async (req, res) => {
 
     res.json({ total: datos.length, datos });
   } catch (err) {
-    console.error("Error getReporteInscripciones:", err.message);
-    res.status(500).json({ error: err.message });
+    logger.error("Error getReporteInscripciones:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -92,8 +93,8 @@ export const getReportePagos = async (req, res) => {
 
     res.json({ total: datos.length, datos });
   } catch (err) {
-    console.error("Error getReportePagos:", err.message);
-    res.status(500).json({ error: err.message });
+    logger.error("Error getReportePagos:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -121,8 +122,8 @@ export const getReporteAuditoria = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error("Error getReporteAuditoria:", err.message);
-    res.status(500).json({ error: err.message });
+    logger.error("Error getReporteAuditoria:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -151,8 +152,8 @@ export const descargarPDFInscripciones = async (req, res) => {
 
     res.send(pdfBuffer);
   } catch (err) {
-    console.error("Error descargarPDFInscripciones:", err.message);
-    res.status(500).json({ error: err.message });
+    logger.error("Error descargarPDFInscripciones:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };
 
@@ -179,7 +180,7 @@ export const descargarPDFPagos = async (req, res) => {
 
     res.send(pdfBuffer);
   } catch (err) {
-    console.error("Error descargarPDFPagos:", err.message);
-    res.status(500).json({ error: err.message });
+    logger.error("Error descargarPDFPagos:", err.message);
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 };

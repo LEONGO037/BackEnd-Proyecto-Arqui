@@ -3,6 +3,7 @@ import { crearEstudiante, buscarUsuarioPorEmailOCI } from "../../models/estudian
 import { registrarAuditoria } from "../../services/auditoria.service.js";
 import { generarPasswordDefault } from "../../services/administrador.docente/docente.service.js";
 import { enviarEmail, emailEstudianteBienvenidaAdmin } from "../../services/email.service.js";
+import { logger, logAplicacion } from "../../services/logger.service.js";
 
 /**
  * Controlador para el registro de estudiantes.
@@ -79,7 +80,7 @@ export const registrarEstudiante = async (req, res) => {
                 email,
                 passwordDefault: password_plano
             })
-        }).catch(err => console.error("Error al enviar correo a estudiante:", err));
+        }).catch(err => logger.error("Error al enviar correo a estudiante", err));
 
         // 9. Respuesta exitosa
         return res.status(201).json({
@@ -93,7 +94,13 @@ export const registrarEstudiante = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Error en registrarEstudiante controller:", error);
+        logAplicacion({
+            nivel: "ERROR",
+            modulo: "estudiante",
+            evento: "REGISTRO_ESTUDIANTE_ERROR",
+            mensaje: error.message,
+            detalle: { email },
+        }).catch(() => { });
         return res.status(500).json({
             error: "Error interno al procesar el registro del estudiante."
         });
