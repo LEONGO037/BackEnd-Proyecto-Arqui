@@ -6,6 +6,7 @@ const EXCLUSIONES = [
     { ruta: /^\/api\/autenticacion\/registrar$/, metodo: "POST" },
     { ruta: /^\/api\/autenticacion\/login$/, metodo: "POST" },
     { ruta: /^\/api\/autenticacion\/verificar-codigo$/, metodo: "POST" },
+    { ruta: /^\/api\/autenticacion\/verificar-token$/, metodo: "GET" },
     { ruta: /^\/api\/autenticacion\/reenviar-codigo$/, metodo: "POST" },
     { ruta: /^\/api\/autenticacion\/solicitar-reset$/, metodo: "POST" },
     { ruta: /^\/api\/autenticacion\/verificar-codigo-reset$/, metodo: "POST" },

@@ -7,6 +7,7 @@ import {
   verificarCodigoReset as verificarCodigoResetServicio,
   resetPassword,
   reenviarCodigoVerificacion,
+  verificarTokenEmail,
 } from "../services/autenticacion.servicio.js";
 import { registrarAuditoriaSegura } from "../services/auditoria.service.js";
 import { logSeguridad, logAplicacion } from "../services/logger.service.js";
@@ -112,6 +113,34 @@ export const verificarCodigo = async (req, res, next) => {
       email: req.body?.email,
       req,
       detalle: { motivo: error.message },
+    }).catch(() => { });
+
+    res.status(400).json({ error: error.message });
+  }
+};
+
+export const verificarTokenLink = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ error: "El token de verificación es requerido" });
+    }
+    const resultado = await verificarTokenEmail(token);
+
+    logSeguridad({
+      evento: "EMAIL_VERIFICADO_LINK",
+      exito: true,
+      req,
+      detalle: { token }
+    }).catch(() => { });
+
+    res.json(resultado);
+  } catch (error) {
+    logSeguridad({
+      evento: "EMAIL_VERIFICACION_LINK_FALLIDA",
+      exito: false,
+      req,
+      detalle: { token: req.query?.token, motivo: error.message },
     }).catch(() => { });
 
     res.status(400).json({ error: error.message });

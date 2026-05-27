@@ -19,6 +19,7 @@ import {
   registrarLoginExitoso,
   contarLoginsRecientes,
   guardarCodigoVerificacion,
+  verificarEmailUsuario,
 } from "../models/usuario.modelo.js";
 import {
   validarCredencialesLogin,
@@ -183,8 +184,10 @@ export const registrarEstudiante = async (datos) => {
   const passwordEncriptado = await bcrypt.hash(password, SALT_ROUNDS);
 
   const codigo = generarCodigo6();
+  const tokenVerificacion = crypto.randomBytes(32).toString("hex");
   const codigoHash = hashCodigo(codigo);
   const expira = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  const expiraToken = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
 
   const nuevoUsuario = await crearUsuarioConVerificacion({
     nombre,
@@ -195,12 +198,17 @@ export const registrarEstudiante = async (datos) => {
     rol_id: rol.id,
     codigo_verificacion: codigoHash,
     codigo_verificacion_expira: expira,
+    token_verificacion: tokenVerificacion,
+    token_verificacion_expira: expiraToken,
   });
+
+  const urlFront = process.env.FRONTEND_URL || "http://localhost:5173";
+  const verificationUrl = `${urlFront}/verificar-email?token=${tokenVerificacion}&email=${encodeURIComponent(email)}`;
 
   await enviarEmail({
     to: email,
     subject: "Verifica tu correo — College X Nexus",
-    html: emailVerificacionCodigo({ nombre, codigo }),
+    html: emailVerificacionCodigo({ nombre, codigo, verificationUrl }),
   });
 
   return {
@@ -220,6 +228,15 @@ export const verificarCodigoEmail = async (email, codigo) => {
   return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
 };
 
+// ─── VERIFICAR TOKEN LINK ────────────────────────────────────────────────────
+
+export const verificarTokenEmail = async (token) => {
+  if (!token) throw new Error("El token es requerido");
+  const usuario = await verificarEmailUsuario(token);
+  if (!usuario) throw new Error("El enlace de verificación es inválido o ha expirado");
+  return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
+};
+
 export const reenviarCodigoVerificacion = async (email) => {
   const GENERIC_MSG = "Si el correo existe en el sistema, se reenvió el código.";
   await new Promise((r) => setTimeout(r, 300));
@@ -232,15 +249,20 @@ export const reenviarCodigoVerificacion = async (email) => {
   }
 
   const codigo = generarCodigo6();
+  const tokenVerificacion = crypto.randomBytes(32).toString("hex");
   const codigoHash = hashCodigo(codigo);
   const expira = new Date(Date.now() + 15 * 60 * 1000);
+  const expiraToken = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  await guardarCodigoVerificacion(usuario.id, codigoHash, expira);
+  await guardarCodigoVerificacion(usuario.id, codigoHash, expira, tokenVerificacion, expiraToken);
+
+  const urlFront = process.env.FRONTEND_URL || "http://localhost:5173";
+  const verificationUrl = `${urlFront}/verificar-email?token=${tokenVerificacion}&email=${encodeURIComponent(email)}`;
 
   enviarEmail({
     to: email,
     subject: "Verifica tu correo — College X Nexus",
-    html: emailVerificacionCodigo({ nombre: usuario.nombre, codigo }),
+    html: emailVerificacionCodigo({ nombre: usuario.nombre, codigo, verificationUrl }),
   }).catch(() => {});
 
   return { mensaje: GENERIC_MSG };

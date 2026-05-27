@@ -56,7 +56,7 @@ export const enviarEmail = async ({ to, subject, html, attachments }) => {
 
 // --- Templates ---
 
-export const emailVerificacionCodigo = ({ nombre, codigo }) => `
+export const emailVerificacionCodigo = ({ nombre, codigo, verificationUrl }) => `
   <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f9fafb;border-radius:12px">
     <h2 style="color:#003366;margin-bottom:0.5rem">College X Nexus</h2>
     <h3 style="color:#1e293b">Verificación de correo</h3>
@@ -67,7 +67,13 @@ export const emailVerificacionCodigo = ({ nombre, codigo }) => `
         ${codigo}
       </span>
     </div>
-    <p style="color:#64748b;font-size:0.9rem">Este código es válido por <strong>15 minutos</strong>. No lo compartas con nadie.</p>
+    <p>O haz clic en el siguiente enlace para verificar tu correo de forma automática y segura:</p>
+    <div style="text-align:center;margin:1.5rem 0">
+      <a href="${verificationUrl}" style="display:inline-block;background:#003366;color:white;padding:0.75rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem">
+        Verificar cuenta ahora
+      </a>
+    </div>
+    <p style="color:#64748b;font-size:0.9rem">El código es válido por <strong>15 minutos</strong> y el enlace por <strong>24 horas</strong>. No los compartas con nadie.</p>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0"/>
     <p style="color:#94a3b8;font-size:0.8rem">Si no solicitaste esto, ignora este correo.</p>
   </div>

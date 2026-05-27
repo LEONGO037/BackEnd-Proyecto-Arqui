@@ -31,6 +31,7 @@ jest.unstable_mockModule('../../src/models/usuario.modelo.js', () => ({
   insertarHistorialPassword: jest.fn(),
   crearUsuarioConVerificacion: jest.fn(),
   verificarCodigoOTP: jest.fn(),
+  verificarEmailUsuario: jest.fn(),
   obtenerUsuarioPorResetToken: jest.fn(),
   guardarResetToken: jest.fn(),
   limpiarResetToken: jest.fn(),

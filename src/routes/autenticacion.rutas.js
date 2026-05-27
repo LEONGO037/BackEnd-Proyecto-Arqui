@@ -5,6 +5,7 @@ import {
   login,
   cambiarPassword,
   verificarCodigo,
+  verificarTokenLink,
   solicitarReset,
   verificarCodigoReset,
   resetearPassword,
@@ -47,6 +48,7 @@ const loginLimiter = rateLimit({
 router.post("/registrar", exigirCaptcha("registro"), registrar);
 router.post("/login", loginLimiter, exigirCaptcha("login"), login);
 router.post("/verificar-codigo", verificarCodigo);
+router.get("/verificar-token", verificarTokenLink);
 router.post("/reenviar-codigo", reenviarCodigo);
 router.put("/cambiar-password", verificarToken, cambiarPassword);
 router.post("/solicitar-reset", exigirCaptcha("reset"), solicitarReset);
