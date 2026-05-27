@@ -274,6 +274,7 @@ export const ejecutarDeteccionCompleta = async () => {
         try {
             resultados[codigo] = await fn();
         } catch (err) {
+            /*
             await logAplicacion({
                 nivel: "ERROR",
                 modulo: "riesgos",
@@ -281,12 +282,14 @@ export const ejecutarDeteccionCompleta = async () => {
                 mensaje: `Falló detección de ${codigo}`,
                 detalle: { error: err.message },
             }).catch(() => { });
+            */
         }
     }
 
     const totalCreados = Object.values(resultados).reduce((s, arr) => s + arr.length, 0);
 
     if (totalCreados > 0) {
+        /*
         await logAplicacion({
             nivel: "INFO",
             modulo: "riesgos",
@@ -296,6 +299,7 @@ export const ejecutarDeteccionCompleta = async () => {
                 Object.entries(resultados).map(([k, v]) => [k, v.length])
             ),
         }).catch(() => { });
+        */
     }
 
     return {

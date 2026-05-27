@@ -156,21 +156,23 @@ app.use((err, req, res, _next) => {
   const statusCode = err.statusCode || err.status || 500;
   const esErrorServidor = statusCode >= 500;
 
-  // Registrar siempre en log de aplicación (no bloquea la respuesta)
-  logAplicacion({
-    nivel: esErrorServidor ? "ERROR" : "WARN",
-    modulo: "express",
-    evento: "ERROR_NO_MANEJADO",
-    mensaje: err.message || "Error desconocido",
-    usuario_id: req.usuario?.id || null,
-    detalle: {
-      status: statusCode,
-      ruta: req.originalUrl,
-      metodo: req.method,
-      ip: req.ip,
-      stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
-    },
-  }).catch(() => { });
+  // Registrar en log de aplicación solo si es un error crítico del servidor (>= 500)
+  if (esErrorServidor) {
+    logAplicacion({
+      nivel: "ERROR",
+      modulo: "express",
+      evento: "ERROR_NO_MANEJADO",
+      mensaje: err.message || "Error desconocido",
+      usuario_id: req.usuario?.id || null,
+      detalle: {
+        status: statusCode,
+        ruta: req.originalUrl,
+        metodo: req.method,
+        ip: req.ip,
+        stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
+      },
+    }).catch(() => { });
+  }
 
   // Respuesta al cliente — sin stack, sin detalles internos
   const respuesta = {
