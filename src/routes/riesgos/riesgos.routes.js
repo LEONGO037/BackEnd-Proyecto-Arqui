@@ -12,6 +12,10 @@ import {
     getResumen,
     postEjecutarDeteccion,
     postReportarDenegacionFrontend,
+    getMatriz,
+    postItemMatriz,
+    putItemMatriz,
+    deleteItemMatriz,
 } from "../../controllers/riesgos/riesgos.controller.js";
 
 // ===========================================================================
@@ -43,5 +47,11 @@ router.put ("/registros/:id/estado",            verificarPermiso("riesgos:gestio
 router.post("/registros/:id/planes",            verificarPermiso("riesgos:gestionar"), postPlanAccion);
 router.put ("/planes/:planId",                  verificarPermiso("riesgos:gestionar"), putPlanAccion);
 router.post("/deteccion/ejecutar",              verificarPermiso("riesgos:gestionar"), postEjecutarDeteccion);
+
+// ───── Matriz de Análisis de Riesgos ───────────────────────────────────────
+router.get("/matriz",      verificarPermiso("riesgos:ver"), getMatriz);
+router.post("/matriz",     verificarPermiso("riesgos:gestionar"), postItemMatriz);
+router.put("/matriz/:id",  verificarPermiso("riesgos:gestionar"), putItemMatriz);
+router.delete("/matriz/:id", verificarPermiso("riesgos:gestionar"), deleteItemMatriz);
 
 export default router;
