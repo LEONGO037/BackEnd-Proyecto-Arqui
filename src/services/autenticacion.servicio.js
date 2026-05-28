@@ -224,8 +224,16 @@ export const verificarCodigoEmail = async (email, codigo) => {
   if (!email || !codigo) throw new Error("Correo y código son requeridos");
   const codigoHash = hashCodigo(String(codigo).trim());
   const usuario = await verificarCodigoOTP(email, codigoHash);
-  if (!usuario) throw new Error("Código inválido o expirado");
-  return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
+  if (usuario) {
+    return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
+  }
+  // El UPDATE no matcheó. Distinguir entre "ya verificado" (caso común cuando
+  // el cliente de correo siguió el link automáticamente) y "código inválido".
+  const existente = await obtenerUsuarioPorEmail(email);
+  if (existente?.email_verificado) {
+    return { mensaje: "Tu cuenta ya está verificada. Ya puedes iniciar sesión.", yaVerificado: true };
+  }
+  throw new Error("Código inválido o expirado");
 };
 
 // ─── VERIFICAR TOKEN LINK ────────────────────────────────────────────────────
