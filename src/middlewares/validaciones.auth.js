@@ -9,7 +9,6 @@ export const validacionRegistro = [
         return true;
     }),
     check("password").isLength({ min: 8 }).withMessage("La contraseña debe tener al menos 8 caracteres"),
-    check("ci").trim().notEmpty().withMessage("El CI es requerido")
 ];
 
 export const validacionLogin = [
