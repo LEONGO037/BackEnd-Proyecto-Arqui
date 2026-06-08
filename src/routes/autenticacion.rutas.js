@@ -14,7 +14,6 @@ import {
 } from "../controllers/autenticacion.controlador.js";
 import { verificarToken } from "../middlewares/autenticacion.middleware.js";
 import { logSeguridad } from "../services/logger.service.js";
-import { exigirCaptcha } from "../services/captcha.service.js";
 import { validarCampos } from "../middlewares/validation.middleware.js";
 import {
   validacionRegistro,
@@ -52,13 +51,13 @@ const loginLimiter = rateLimit({
   },
 });
 
-router.post("/registrar", validacionRegistro, validarCampos, exigirCaptcha("registro"), registrar);
-router.post("/login", loginLimiter, validacionLogin, validarCampos, exigirCaptcha("login"), login);
+router.post("/registrar", validacionRegistro, validarCampos, registrar);
+router.post("/login", loginLimiter, validacionLogin, validarCampos, login);
 router.post("/verificar-codigo", verificarCodigo);
 router.get("/verificar-token", verificarTokenLink);
 router.post("/reenviar-codigo", reenviarCodigo);
 router.put("/cambiar-password", verificarToken, validacionNuevaPassword, validarCampos, cambiarPassword);
-router.post("/solicitar-reset", validacionReset, validarCampos, exigirCaptcha("reset"), solicitarReset);
+router.post("/solicitar-reset", validacionReset, validarCampos, solicitarReset);
 router.post("/verificar-codigo-reset", verificarCodigoReset);
 router.post("/reset-password", validacionNuevaPassword, validarCampos, resetearPassword);
 router.get("/perfil", verificarToken, perfil);
