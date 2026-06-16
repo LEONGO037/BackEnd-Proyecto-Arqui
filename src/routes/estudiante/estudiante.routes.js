@@ -5,6 +5,7 @@ import { verificarPermiso } from "../../middlewares/roles.middleware.js";
 
 const router = express.Router();
 
-router.post("/registrar", verificarToken, verificarPermiso("usuarios:gestionar"), registrarEstudiante);
+// Registrar estudiante por un administrador = crear usuario
+router.post("/registrar", verificarToken, verificarPermiso("usuarios:crear", "usuarios:gestionar"), registrarEstudiante);
 
 export default router;

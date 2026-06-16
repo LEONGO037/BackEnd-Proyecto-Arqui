@@ -31,10 +31,11 @@ router.delete(
   deleteDesinscribir
 );
 
-// Rutas de administración (requieren rol ADMIN)
+// Rutas de administración. El resumen es de solo lectura → basta con
+// 'inscripciones:ver' (o el 'inscripciones:gestionar' de control total).
 router.get(
   "/resumen",
-  verificarPermiso("inscripciones:gestionar"),
+  verificarPermiso("inscripciones:ver", "inscripciones:gestionar"),
   getResumenCursos
 );
 

@@ -13,19 +13,30 @@ export const crearDocente = async (datos) => {
     email, password_hash, rol_id,
   } = datos;
 
-  const resultado = await pool.query(
-    `INSERT INTO usuarios
-    (nombre, apellido_paterno, apellido_materno, email, password_hash,
-     rol_id,
-     email_verificado, debe_cambiar_password)
-    VALUES ($1,$2,$3,$4,$5,$6, TRUE, TRUE)
-    RETURNING id, nombre, email`,
-    [
-      nombre, apellido_paterno, apellido_materno,
-      email, password_hash, rol_id
-    ]
-  );
-  return resultado.rows[0];
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO usuarios
+      (nombre, apellido_paterno, apellido_materno, email, password_hash,
+       rol_id,
+       email_verificado, debe_cambiar_password)
+      VALUES ($1,$2,$3,$4,$5,$6, TRUE, TRUE)
+      RETURNING id, nombre, email`,
+      [
+        nombre, apellido_paterno, apellido_materno,
+        email, password_hash, rol_id
+      ]
+    );
+    return resultado.rows[0];
+  } catch (error) {
+    // Correo duplicado → error de negocio claro (409) en vez de 500
+    if (error?.code === "23505") {
+      const err = new Error("El correo electrónico ya está registrado");
+      err.status = 409;
+      err.statusCode = 409;
+      throw err;
+    }
+    throw error;
+  }
 };
 
 export const obtenerDocentes = async () => {

@@ -94,6 +94,12 @@ export const registrarEstudiante = async (req, res) => {
         });
 
     } catch (error) {
+        // Correo duplicado (violación de unicidad) → 409, no 500
+        if (error?.status === 409 || error?.code === "23505") {
+            return res.status(409).json({
+                error: "El estudiante ya se encuentra registrado con ese Email."
+            });
+        }
         logAplicacion({
             nivel: "ERROR",
             modulo: "estudiante",

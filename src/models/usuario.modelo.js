@@ -1,5 +1,18 @@
 import pool from "../config/db.js";
 
+// Convierte la violación de unicidad de Postgres (código 23505) en un error
+// de negocio claro con status 409, en vez de dejar que se propague como un
+// 500 "Error interno del servidor".
+const manejarEmailDuplicado = (error) => {
+  if (error?.code === "23505") {
+    const err = new Error("El correo electrónico ya está registrado");
+    err.status = 409;
+    err.statusCode = 409;
+    return err;
+  }
+  return error;
+};
+
 export const obtenerRolPorNombre = async (nombreRol) => {
   const resultado = await pool.query(
     "SELECT id FROM roles WHERE nombre = $1",
@@ -22,14 +35,18 @@ export const crearUsuario = async (datosUsuario) => {
     email, password_hash, rol_id
   } = datosUsuario;
 
-  const resultado = await pool.query(
-    `INSERT INTO usuarios
-    (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id)
-    VALUES ($1,$2,$3,$4,$5,$6)
-    RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
-    [nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id]
-  );
-  return resultado.rows[0];
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO usuarios
+      (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id)
+      VALUES ($1,$2,$3,$4,$5,$6)
+      RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
+      [nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id]
+    );
+    return resultado.rows[0];
+  } catch (error) {
+    throw manejarEmailDuplicado(error);
+  }
 };
 
 export const obtenerUsuarioPorEmailConRol = async (email) => {
@@ -121,22 +138,26 @@ export const crearUsuarioConVerificacion = async (datosUsuario) => {
     debe_cambiar_password = false,
   } = datosUsuario;
 
-  const resultado = await pool.query(
-    `INSERT INTO usuarios
-     (nombre, apellido_paterno, apellido_materno,
-      email, password_hash, rol_id, email_verificado,
-      codigo_verificacion, codigo_verificacion_expira,
-      token_verificacion, token_verificacion_expira, debe_cambiar_password)
-     VALUES ($1,$2,$3,$4,$5,$6,FALSE,$7,$8,$9,$10,$11)
-     RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
-    [
-      nombre, apellido_paterno, apellido_materno,
-      email, password_hash, rol_id,
-      codigo_verificacion, codigo_verificacion_expira,
-      token_verificacion, token_verificacion_expira, debe_cambiar_password,
-    ]
-  );
-  return resultado.rows[0];
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO usuarios
+       (nombre, apellido_paterno, apellido_materno,
+        email, password_hash, rol_id, email_verificado,
+        codigo_verificacion, codigo_verificacion_expira,
+        token_verificacion, token_verificacion_expira, debe_cambiar_password)
+       VALUES ($1,$2,$3,$4,$5,$6,FALSE,$7,$8,$9,$10,$11)
+       RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
+      [
+        nombre, apellido_paterno, apellido_materno,
+        email, password_hash, rol_id,
+        codigo_verificacion, codigo_verificacion_expira,
+        token_verificacion, token_verificacion_expira, debe_cambiar_password,
+      ]
+    );
+    return resultado.rows[0];
+  } catch (error) {
+    throw manejarEmailDuplicado(error);
+  }
 };
 
 // Verifica OTP (hash del codigo), marca email como verificado y limpia todo

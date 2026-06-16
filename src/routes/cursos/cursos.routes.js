@@ -44,9 +44,10 @@ const reglasCurso = [
 // Rutas Cursos
 // NOTA: verificarToken ya NO se agrega manualmente porque secureByDefault lo aplica globalmente.
 router.get("/", getCursos);  // público (agregado en lista blanca)
-router.get("/admin",       verificarPermiso("cursos:gestionar"), getAllCursosAdmin);
+// Permisos granulares de cursos (con "cursos:gestionar" legacy como respaldo).
+router.get("/admin",       verificarPermiso("cursos:ver", "cursos:registrar", "cursos:modificar", "cursos:eliminar", "cursos:gestionar"), getAllCursosAdmin);
 router.get("/sin-docente", getCursosSinDocente);
-router.post("/crear",      verificarPermiso("cursos:gestionar"), reglasCurso, createCurso);
+router.post("/crear",      verificarPermiso("cursos:registrar", "cursos:gestionar"), reglasCurso, createCurso);
 
 router.patch("/:id/minimo-estudiantes",
   body("minimo_estudiantes").isInt({ min: 1 }).withMessage("El mínimo de estudiantes debe ser un entero mayor o igual a 1"),
@@ -56,8 +57,8 @@ router.patch("/:id/minimo-estudiantes",
 
 router.get("/validar-inscripcion/:curso_id", validarInscripcionCurso);
 
-router.put("/:id",               verificarPermiso("cursos:gestionar"), reglasCurso, updateCurso);
-router.put("/:id/prerrequisitos",verificarPermiso("cursos:gestionar"), updatePrerrequisitos);
-router.delete("/:id",            verificarPermiso("cursos:gestionar"), deleteCursoController);
+router.put("/:id",               verificarPermiso("cursos:modificar", "cursos:gestionar"), reglasCurso, updateCurso);
+router.put("/:id/prerrequisitos",verificarPermiso("cursos:modificar", "cursos:gestionar"), updatePrerrequisitos);
+router.delete("/:id",            verificarPermiso("cursos:eliminar", "cursos:gestionar"), deleteCursoController);
 
 export default router;

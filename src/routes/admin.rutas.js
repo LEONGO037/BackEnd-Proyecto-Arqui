@@ -7,7 +7,7 @@ const router = express.Router();
 router.get(
   "/panel",
   verificarToken,
-  verificarPermiso("usuarios:gestionar"),
+  verificarPermiso("usuarios:ver", "usuarios:gestionar"),
   (req, res) => {
     res.json({
       mensaje: "Bienvenido al panel de administrador",

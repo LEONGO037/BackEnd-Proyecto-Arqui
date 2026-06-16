@@ -49,6 +49,18 @@ export const putRol = async (req, res, next) => {
 export const deleteRol = async (req, res, next) => {
   try {
     await deleteRole(req.params.id);
+
+    // Eliminar un rol es una operación crítica de seguridad → WARN
+    logAplicacion({
+      nivel: "WARN",
+      modulo: "seguridad",
+      evento: "ROL_ELIMINADO",
+      mensaje: `Rol ID ${req.params.id} eliminado`,
+      usuario_id: req.usuario?.id,
+      detalle: { rol_id: req.params.id },
+      req,
+    }).catch(() => {});
+
     res.json({ mensaje: "Rol eliminado" });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
@@ -77,6 +89,18 @@ export const postAsignarPermiso = async (req, res, next) => {
   try {
     const { permisoId } = req.body;
     await assignPermisoToRol(req.params.id, permisoId);
+
+    // Cambiar los permisos de un rol es crítico de seguridad → WARN
+    logAplicacion({
+      nivel: "WARN",
+      modulo: "seguridad",
+      evento: "PERMISO_ASIGNADO",
+      mensaje: `Permiso ${permisoId} asignado al rol ${req.params.id}`,
+      usuario_id: req.usuario?.id,
+      detalle: { rol_id: req.params.id, permiso_id: permisoId },
+      req,
+    }).catch(() => {});
+
     res.json({ mensaje: "Permiso asignado" });
   } catch (err) { next(err); }
 };
@@ -84,6 +108,18 @@ export const postAsignarPermiso = async (req, res, next) => {
 export const deletePermisoDeRol = async (req, res, next) => {
   try {
     await removePermisoFromRol(req.params.id, req.params.pid);
+
+    // Revocar un permiso de un rol es crítico de seguridad → WARN
+    logAplicacion({
+      nivel: "WARN",
+      modulo: "seguridad",
+      evento: "PERMISO_REVOCADO",
+      mensaje: `Permiso ${req.params.pid} revocado del rol ${req.params.id}`,
+      usuario_id: req.usuario?.id,
+      detalle: { rol_id: req.params.id, permiso_id: req.params.pid },
+      req,
+    }).catch(() => {});
+
     res.json({ mensaje: "Permiso removido" });
   } catch (err) { next(err); }
 };
@@ -110,13 +146,15 @@ export const putUsuarioRol = async (req, res, next) => {
     if (!rol_id) return res.status(400).json({ error: "rol_id es requerido" });
     const usuario = await updateUserRol(req.params.id, rol_id);
 
+    // Cambiar el rol de un usuario es una operación crítica de seguridad → WARN
     logAplicacion({
-      nivel: "INFO",
+      nivel: "WARN",
       modulo: "seguridad",
       evento: "ROL_ASIGNADO",
       mensaje: `Rol asignado (${rol_id}) al usuario ID ${req.params.id}`,
       usuario_id: req.usuario?.id,
       detalle: { afectado_usuario_id: req.params.id, rol_id },
+      req,
     }).catch(() => {});
 
     res.json(usuario);
@@ -159,6 +197,18 @@ export const deleteUsuario = async (req, res, next) => {
       return res.status(400).json({ error: "No puedes eliminar tu propia cuenta" });
     }
     await deleteUsuarioById(req.params.id);
+
+    // Eliminar (desactivar) un usuario es una operación crítica → WARN
+    logAplicacion({
+      nivel: "WARN",
+      modulo: "seguridad",
+      evento: "USUARIO_ELIMINADO",
+      mensaje: `Usuario ID ${req.params.id} eliminado`,
+      usuario_id: req.usuario?.id,
+      detalle: { afectado_usuario_id: req.params.id },
+      req,
+    }).catch(() => {});
+
     res.json({ mensaje: "Usuario eliminado correctamente" });
   } catch (err) { next(err); }
 };
@@ -194,13 +244,15 @@ export const postCrearUsuario = async (req, res, next) => {
              <p>Deberás cambiarla al iniciar sesión por primera vez.</p>`,
     }).catch(() => {});
 
+    // Alta de cuenta por un administrador → operación sensible de identidad → WARN
     logAplicacion({
-      nivel: "INFO",
+      nivel: "WARN",
       modulo: "seguridad",
       evento: "USUARIO_CREADO_ADMIN",
       mensaje: `Cuenta de usuario administrador creada para ${email}`,
       usuario_id: req.usuario?.id,
       detalle: { email, rol_id },
+      req,
     }).catch(() => {});
 
     res.status(201).json({ mensaje: "Usuario creado correctamente", usuario });

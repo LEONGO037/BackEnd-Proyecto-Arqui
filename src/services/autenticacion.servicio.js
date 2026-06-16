@@ -49,6 +49,8 @@ const firmarToken = (usuario, permisos) =>
     {
       id: usuario.id,
       nombre: usuario.nombre,
+      apellido_paterno: usuario.apellido_paterno || null,
+      apellido_materno: usuario.apellido_materno || null,
       email: usuario.email,
       rol: usuario.rol_nombre || usuario.rol,
       rol_id: usuario.rol_id,
@@ -110,6 +112,8 @@ export const iniciarSesion = async (email, password) => {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
+        apellido_paterno: usuario.apellido_paterno,
+        apellido_materno: usuario.apellido_materno,
         email: usuario.email,
         rol: usuario.rol_nombre,
         rol_id: usuario.rol_id,
@@ -143,6 +147,8 @@ export const iniciarSesion = async (email, password) => {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
+        apellido_paterno: usuario.apellido_paterno,
+        apellido_materno: usuario.apellido_materno,
         email: usuario.email,
         rol: usuario.rol_nombre,
         rol_id: usuario.rol_id,
@@ -306,7 +312,13 @@ export const cambiarPassword = async (usuarioId, passwordActual, nuevaPassword) 
   // Emitir nuevo JWT sin el flag debe_cambiar_password
   const permisos = await getRolePermissions(usuarioActualizado.rol_id);
   const token = firmarToken(
-    { ...usuarioActualizado, rol_nombre: usuario.rol_nombre, debe_cambiar_password: false },
+    {
+      ...usuarioActualizado,
+      apellido_paterno: usuario.apellido_paterno,
+      apellido_materno: usuario.apellido_materno,
+      rol_nombre: usuario.rol_nombre,
+      debe_cambiar_password: false,
+    },
     permisos
   );
 
@@ -314,6 +326,8 @@ export const cambiarPassword = async (usuarioId, passwordActual, nuevaPassword) 
     usuario: {
       id: usuarioActualizado.id,
       nombre: usuarioActualizado.nombre,
+      apellido_paterno: usuario.apellido_paterno,
+      apellido_materno: usuario.apellido_materno,
       email: usuarioActualizado.email,
       rol: usuario.rol_nombre,
       rol_id: usuarioActualizado.rol_id,

@@ -44,7 +44,8 @@ export const registrar = async (req, res, next) => {
       detalle: { razon: error.message },
     }).catch(() => { });
 
-    res.status(400).json({ error: error.message });
+    // Respeta el status del error (409 si el correo ya existe), evitando un 500 genérico
+    res.status(error.status || error.statusCode || 400).json({ error: error.message });
   }
 };
 
