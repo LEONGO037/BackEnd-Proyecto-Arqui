@@ -49,9 +49,9 @@ router.put ("/planes/:planId",                  verificarPermiso("riesgos:gestio
 router.post("/deteccion/ejecutar",              verificarPermiso("riesgos:gestionar"), postEjecutarDeteccion);
 
 // ───── Matriz de Análisis de Riesgos ───────────────────────────────────────
-router.get("/matriz",      verificarPermiso("riesgos:ver"), getMatriz);
-router.post("/matriz",     verificarPermiso("riesgos:gestionar"), postItemMatriz);
-router.put("/matriz/:id",  verificarPermiso("riesgos:gestionar"), putItemMatriz);
-router.delete("/matriz/:id", verificarPermiso("riesgos:gestionar"), deleteItemMatriz);
+router.get("/matriz",      verificarPermiso("matriz:ver"), getMatriz);
+router.post("/matriz",     verificarPermiso("matriz:agregar"), postItemMatriz);
+router.put("/matriz/:id",  verificarPermiso("matriz:editar"), putItemMatriz);
+router.delete("/matriz/:id", verificarPermiso("matriz:eliminar"), deleteItemMatriz);
 
 export default router;
