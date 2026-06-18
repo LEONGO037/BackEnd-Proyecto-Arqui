@@ -108,7 +108,7 @@ export const getUserWithPermissions = async (userId) => {
 };
 
 export const getAccessMatrix = async () => {
-  const rolesRes = await pool.query(`SELECT id, nombre FROM roles ORDER BY nombre`);
+  const rolesRes = await pool.query(`SELECT id, nombre FROM roles WHERE activo = TRUE ORDER BY nombre`);
   const permisosRes = await pool.query(`SELECT nombre FROM permisos WHERE activo = TRUE ORDER BY nombre`);
 
   const roles = rolesRes.rows.map((r) => r.nombre);
