@@ -1,61 +1,130 @@
 import nodemailer from 'nodemailer';
-import dns from 'dns';
+import { logger } from './logger.service.js';
 
-// Configuración de Nodemailer (SMTP) optimizada para producción
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.EMAIL_PORT || '587'),
-  secure: process.env.EMAIL_PORT === '465', // false para 587 (STARTTLS)
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS || process.env.EMAIL_PASSWORD,
-  },
-  // Forzar IPv4 para evitar el error ENETUNREACH en ciertos entornos (Docker/Render/Railway)
-  dnsLookup: (hostname, options, callback) => {
-    dns.lookup(hostname, { family: 4 }, callback);
-  },
-  tls: {
-    // Evita errores de certificado que pueden ocurrir en entornos de red específicos
-    rejectUnauthorized: false
+const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
+const esProduccion = process.env.NODE_ENV === 'production';
+
+// Parsea "Nombre <email@x.com>" o "email@x.com" en { name, email }
+const parseFrom = () => {
+  const raw = process.env.EMAIL_FROM || '';
+  const match = raw.match(/^(.*?)\s*<(.+?)>\s*$/);
+  if (match) return { name: match[1].trim() || 'College X Nexus', email: match[2].trim() };
+  return { name: 'College X Nexus', email: raw.trim() };
+};
+
+// Convierte un attachment { filename, content } al formato Brevo.
+const toBrevoAttachment = (a) => {
+  let contentBase64;
+  if (Buffer.isBuffer(a.content)) contentBase64 = a.content.toString('base64');
+  else if (typeof a.content === 'string') contentBase64 = Buffer.from(a.content).toString('base64');
+  else contentBase64 = '';
+  return { name: a.filename, content: contentBase64 };
+};
+
+const tieneSmtpReal = process.env.SMTP_HOST &&
+  process.env.SMTP_HOST !== 'localhost' &&
+  process.env.SMTP_HOST !== '127.0.0.1';
+
+const enviarEmailNodemailer = async ({ to, subject, html, attachments }) => {
+  const destino = Array.isArray(to) ? to.join(', ') : to;
+
+  if (!tieneSmtpReal) {
+    // Sin SMTP configurado: imprime el correo en consola para desarrollo
+    logger.info(`\n${'─'.repeat(60)}\n[DEV EMAIL] Para: ${destino}\nAsunto: ${subject}\n${'─'.repeat(60)}\n${html.replace(/<[^>]+>/g, '').trim().slice(0, 600)}\n${'─'.repeat(60)}`);
+    return { messageId: 'dev-console', destino };
   }
-});
 
-const FROM = process.env.EMAIL_FROM || `College X Nexus <${process.env.EMAIL_USER}>`;
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: false,
+    auth: process.env.SMTP_USER ? {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    } : undefined,
+  });
 
-/**
- * Envía un correo electrónico utilizando Nodemailer (SMTP)
- * @param {Object} options - Opciones del correo
- * @param {string|string[]} options.to - Destinatario(s)
- * @param {string} options.subject - Asunto
- * @param {string} options.html - Contenido HTML
- * @param {Array} [options.attachments] - Adjuntos (opcional)
- */
-export const enviarEmail = async ({ to, subject, html, attachments }) => {
-  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-    console.warn('⚠️ Configuración de correo incompleta (EMAIL_USER/EMAIL_PASS faltantes).');
-    throw new Error('Servicio de correo no configurado');
-  }
+  const sender = parseFrom();
+  const from = sender.email
+    ? `"${sender.name}" <${sender.email}>`
+    : process.env.SMTP_USER || 'noreply@college.local';
 
   const mailOptions = {
-    from: FROM,
-    to: Array.isArray(to) ? to.join(', ') : to,
+    from,
+    to: destino,
     subject,
     html,
-    attachments: attachments || [],
   };
+
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    mailOptions.attachments = attachments.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+    }));
+  }
 
   try {
     const info = await transporter.sendMail(mailOptions);
+    logger.info(`[Nodemailer] Email enviado a ${destino} — ${info.messageId}`);
     return info;
   } catch (error) {
-    console.error('❌ Error al enviar correo con Nodemailer:', error.message);
+    logger.error('[Nodemailer] Error al enviar email', error.message);
     throw error;
   }
 };
 
+const enviarEmailBrevo = async ({ to, subject, html, attachments }) => {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    logger.warn('Configuración de correo incompleta (BREVO_API_KEY faltante).');
+    throw new Error('Servicio de correo no configurado');
+  }
+
+  const sender = parseFrom();
+  if (!sender.email) {
+    logger.warn('EMAIL_FROM no configurado correctamente.');
+    throw new Error('Email remitente no configurado');
+  }
+
+  const recipients = (Array.isArray(to) ? to : [to]).map((e) => ({ email: e }));
+  const payload = { sender, to: recipients, subject, htmlContent: html };
+
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    payload.attachment = attachments.map(toBrevoAttachment);
+  }
+
+  try {
+    const respuesta = await fetch(BREVO_URL, {
+      method: 'POST',
+      headers: {
+        accept: 'application/json',
+        'content-type': 'application/json',
+        'api-key': apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!respuesta.ok) {
+      const cuerpo = await respuesta.text();
+      logger.error(`Brevo rechazó el envío (${respuesta.status})`, cuerpo);
+      throw new Error(`Brevo error ${respuesta.status}: ${cuerpo.slice(0, 200)}`);
+    }
+
+    return await respuesta.json();
+  } catch (error) {
+    logger.error('Error al enviar correo con Brevo', error.message);
+    throw error;
+  }
+};
+
+/**
+ * Envía un correo. En desarrollo usa Nodemailer (SMTP local), en producción usa Brevo.
+ */
+export const enviarEmail = esProduccion ? enviarEmailBrevo : enviarEmailNodemailer;
+
 // --- Templates ---
 
-export const emailVerificacionCodigo = ({ nombre, codigo }) => `
+export const emailVerificacionCodigo = ({ nombre, codigo, verificationUrl }) => `
   <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:2rem;background:#f9fafb;border-radius:12px">
     <h2 style="color:#003366;margin-bottom:0.5rem">College X Nexus</h2>
     <h3 style="color:#1e293b">Verificación de correo</h3>
@@ -66,7 +135,13 @@ export const emailVerificacionCodigo = ({ nombre, codigo }) => `
         ${codigo}
       </span>
     </div>
-    <p style="color:#64748b;font-size:0.9rem">Este código es válido por <strong>15 minutos</strong>. No lo compartas con nadie.</p>
+    <p>O haz clic en el siguiente enlace para verificar tu correo de forma automática y segura:</p>
+    <div style="text-align:center;margin:1.5rem 0">
+      <a href="${verificationUrl}" style="display:inline-block;background:#003366;color:white;padding:0.75rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:1rem">
+        Verificar cuenta ahora
+      </a>
+    </div>
+    <p style="color:#64748b;font-size:0.9rem">El código es válido por <strong>15 minutos</strong> y el enlace por <strong>24 horas</strong>. No los compartas con nadie.</p>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:1.5rem 0"/>
     <p style="color:#94a3b8;font-size:0.8rem">Si no solicitaste esto, ignora este correo.</p>
   </div>

@@ -1,6 +1,18 @@
-// src/controllers/cursos/cursos.controller.js
 import { CursosModel } from "../../models/cursos/cursos.model.js";
-import { registrarAuditoria } from "../../services/auditoria.service.js";
+import { registrarAuditoria, diffObjetos } from "../../services/auditoria.service.js";
+import { logAplicacion } from "../../services/logger.service.js";
+
+// Responde un 500 sin filtrar el mensaje interno del servidor (control de
+// errores) y registra el error real en el log de aplicación para diagnóstico.
+const responderError500 = (res, err) => {
+  logAplicacion({
+    nivel: "ERROR",
+    modulo: "cursos",
+    evento: "ERROR_CURSOS",
+    mensaje: err?.message || "Error desconocido",
+  }).catch(() => {});
+  res.status(500).json({ error: "Error interno del servidor. Intenta nuevamente." });
+};
 
 /**
  * GET /api/cursos
@@ -11,7 +23,7 @@ export const getAllCursosAdmin = async (req, res) => {
     const cursos = await CursosModel.getAllAdmin();
     res.json(cursos);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    responderError500(res, err);
   }
 };
 
@@ -27,6 +39,15 @@ export const deleteCursoController = async (req, res) => {
         registro_id: id,
         detalle: {},
       });
+
+      logAplicacion({
+        nivel: "WARN",
+        modulo: "cursos",
+        evento: "CURSO_ELIMINADO",
+        mensaje: `Curso con ID ${id} eliminado`,
+        usuario_id: req.usuario.id,
+        detalle: { id },
+      }).catch(() => {});
     }
     res.json({ mensaje: 'Curso eliminado correctamente' });
   } catch (err) {
@@ -40,7 +61,7 @@ export const getCursos = async (req, res) => {
 
     res.json(cursos);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    responderError500(res, err);
   }
 };
 
@@ -94,11 +115,20 @@ export const createCurso = async (req, res) => {
           tiene_prerrequisitos: !!(prerrequisitos && prerrequisitos.length > 0)
         },
       });
+
+      logAplicacion({
+        nivel: "INFO",
+        modulo: "cursos",
+        evento: "CURSO_CREADO",
+        mensaje: `Curso nuevo '${nuevoCurso.nombre}' creado`,
+        usuario_id: req.usuario.id,
+        detalle: { id: nuevoCurso.id, nombre: nuevoCurso.nombre, costo: nuevoCurso.costo },
+      }).catch(() => {});
     }
 
     res.status(201).json(nuevoCurso);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    responderError500(res, err);
   }
 };
 
@@ -139,7 +169,7 @@ export const actualizarMinimoEstudiantesCurso = async (req, res) => {
 
     res.json(cursoActualizado);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    responderError500(res, err);
   }
 };
 
@@ -153,56 +183,69 @@ export const getCursosSinDocente = async (req, res) => {
 
     res.json(cursos);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    responderError500(res, err);
   }
 };
-export const validarInscripcionCurso = async (req, res) => {
+export const validarInscripcionCurso = async (req, res, next) => {
   try {
 
     const estudiante_id = req.usuario.id;
     const { curso_id } = req.params;
 
     const resultado = await CursosModel.validarPrerrequisitos(
-  estudiante_id,
-  curso_id
-);
+      estudiante_id,
+      curso_id
+    );
 
     if (!resultado.permitido) {
-  return res.status(403).json({
-    mensaje: `Debes aprobar primero el curso: ${resultado.curso_faltante}`
-  });
-}
+      const err = new Error(`Debes aprobar primero el curso: ${resultado.curso_faltante}`);
+      err.statusCode = 403;
+      return next(err);
+    }
 
     res.json({
       mensaje: "Prerrequisitos cumplidos. Puedes inscribirte."
     });
 
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 };
 export const updateCurso = async (req, res) => {
-
   try {
-
     const { id } = req.params;
 
-    const cursoActualizado = await CursosModel.update(id, req.body);
+    const cursoAnterior = await CursosModel.getById(id);
+    if (!cursoAnterior) {
+      return res.status(404).json({ error: "Curso no encontrado" });
+    }
 
-    // Auditoría
+    const cursoActualizado = await CursosModel.update(id, req.body);
+    const diff = diffObjetos(cursoAnterior, cursoActualizado);
+
+    // Auditoría diferencial
     await registrarAuditoria({
       usuario_id: req.usuario.id,
       accion: "UPDATE",
       tabla_afectada: "cursos",
       registro_id: id,
-      detalle: req.body
+      detalle: diff
     });
+
+    logAplicacion({
+      nivel: "WARN",
+      modulo: "cursos",
+      evento: "CURSO_EDITADO",
+      mensaje: `Curso ID ${id} actualizado`,
+      usuario_id: req.usuario.id,
+      detalle: { id, cambios: diff.cambios },
+      req
+    }).catch(() => {});
 
     res.json({
       mensaje: "Curso actualizado correctamente",
       data: cursoActualizado
     });
-
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

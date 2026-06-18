@@ -10,32 +10,35 @@ import { asignarCursoAdmin } from "../../controllers/administrador.docente/docen
 
 const router = express.Router();
 
-// Solo ADMIN_CUENTAS puede crear docentes
+// Crear docentes = crear usuario
 router.post(
   "/crear-docente",
   verificarToken,
-  verificarPermiso("usuarios:gestionar"),
+  verificarPermiso("usuarios:crear", "usuarios:gestionar"),
   crearDocenteAdmin
 );
 
+// Asignar docente a un curso = modificar curso
 router.post(
   "/asignar-curso",
   verificarToken,
-  verificarPermiso("cursos:gestionar"),
+  verificarPermiso("cursos:modificar", "cursos:gestionar"),
   asignarCursoAdmin
 );
 
+// Listar docentes para asignación = ver cursos
 router.get(
   "/docentes",
   verificarToken,
-  verificarPermiso("cursos:gestionar"),
+  verificarPermiso("cursos:ver", "cursos:modificar", "cursos:gestionar"),
   verDocentes
 );
 
+// Editar datos de un docente = editar usuario
 router.put(
   "/docentes/:id",
   verificarToken,
-  verificarPermiso("usuarios:gestionar"),
+  verificarPermiso("usuarios:editar", "usuarios:gestionar"),
   actualizarDocenteAdmin
 );
 

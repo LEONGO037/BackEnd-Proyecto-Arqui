@@ -24,6 +24,17 @@ export const CursosModel = {
     },
 
     /**
+     * Obtiene un curso por su ID.
+     */
+    getById: async (id) => {
+        const { rows } = await pool.query(
+            `SELECT * FROM public.cursos WHERE id = $1`,
+            [id]
+        );
+        return rows[0] || null;
+    },
+
+    /**
      * Elimina un curso (soft delete marcando activo = false).
      */
     deleteCurso: async (id) => {

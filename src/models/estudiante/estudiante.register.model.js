@@ -1,4 +1,5 @@
 import pool from "../../config/db.js";
+import { logger } from "../../services/logger.service.js";
 
 /**
  * Crea un nuevo registro de usuario con rol de estudiante.
@@ -37,7 +38,7 @@ export const crearEstudiante = async (datosEstudiante) => {
         const { rows } = await pool.query(query, values);
         return rows[0];
     } catch (error) {
-        console.error("Error en crearEstudiante model:", error);
+        logger.error("Error en crearEstudiante model", error);
         throw error;
     }
 };

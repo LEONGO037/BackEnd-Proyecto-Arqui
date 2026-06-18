@@ -9,6 +9,7 @@ import {
 } from "../../models/docente/curso.js";
 import { obtenerDatosParaCertificado } from "../../models/docente/estudiante.js";
 import { enviarNotificacionResultado } from "../certificado/certificado.email.service.js";
+import { logger } from "../logger.service.js";
 
 export const listarCursosDocente = async (usuario_id) => {
 
@@ -77,13 +78,13 @@ export const cambiarEstadoCurso = async (usuario_id, curso_id, nuevoEstado) => {
                 return enviarNotificacionResultado(datos.email, nombreCompleto, datos.curso_nombre, est.nota_final);
               })
               .catch((err) => {
-                console.error(`Error al enviar notificación al estudiante ${est.estudiante_id}:`, err.message);
+                logger.error(`Error al enviar notificación al estudiante ${est.estudiante_id}`, err.message);
               })
           )
         );
       })
       .catch((err) => {
-        console.error("Error al obtener estudiantes para notificación de cierre:", err.message);
+        logger.error("Error al obtener estudiantes para notificación de cierre", err.message);
       });
   }
 

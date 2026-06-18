@@ -3,6 +3,7 @@ import { crearOrden, capturarOrden } from '../../services/paypal.service.js';
 import { inscribirEstudianteEnCurso, inscribirEstudianteEnCursos } from '../../models/inscripcion/inscripcion.model.js';
 import * as PagosModel from '../../models/pagos/pagos.model.js';
 import { registrarAuditoriaSegura } from '../../services/auditoria.service.js';
+import { logAplicacion } from '../../services/logger.service.js';
 
 export const getConfig = (req, res) => {
   res.json({ clientId: process.env.PAYPAL_CLIENT_ID });
@@ -126,6 +127,15 @@ export const postCapturarOrden = async (req, res) => {
       },
     });
 
+    logAplicacion({
+      nivel: "INFO",
+      modulo: "pagos",
+      evento: "PAGO_PROCESADO",
+      mensaje: `Pago de PayPal capturado (${captura.id}) e inscripción realizada`,
+      usuario_id: estudianteId,
+      detalle: { transaccion: captura.id, cursos: ids, inscripciones: resultadoInscripcion.inscripciones },
+    }).catch(() => {});
+
     res.json({
       mensaje: ids.length === 1
         ? '¡Pago exitoso! Ya estás inscrito en el curso.'
@@ -155,7 +165,9 @@ export const getPagosUsuario = async (req, res, next) => {
     const permisos = await getRolePermissions(req.usuario.rol_id);
     const esAdmin = permisos.includes("pagos:ver");
     if (!esAdmin && targetId !== req.usuario.id) {
-      return res.status(403).json({ error: "No puede acceder a datos de otro usuario" });
+      const err = new Error("No puede acceder a datos de otro usuario");
+      err.statusCode = 403;
+      return next(err);
     }
     const pagos = await PagosModel.obtenerPagosPorUsuario(targetId);
     res.json(pagos);

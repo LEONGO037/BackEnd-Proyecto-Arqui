@@ -1,5 +1,6 @@
 // src/models/factura/factura.model.js
 import pool from '../../config/db.js';
+import { logger } from '../../services/logger.service.js';
 
 export const obtenerCursosPorIds = async (cursoIds) => {
   try {
@@ -9,7 +10,7 @@ export const obtenerCursosPorIds = async (cursoIds) => {
     );
     return result.rows;
   } catch (error) {
-    console.error('Error en modelo obtenerCursosPorIds:', error.message);
+    logger.error('Error en modelo obtenerCursosPorIds', error.message);
     throw new Error('Error al consultar los cursos en la base de datos');
   }
 };

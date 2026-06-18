@@ -1,5 +1,18 @@
 import pool from "../config/db.js";
 
+// Convierte la violación de unicidad de Postgres (código 23505) en un error
+// de negocio claro con status 409, en vez de dejar que se propague como un
+// 500 "Error interno del servidor".
+const manejarEmailDuplicado = (error) => {
+  if (error?.code === "23505") {
+    const err = new Error("El correo electrónico ya está registrado");
+    err.status = 409;
+    err.statusCode = 409;
+    return err;
+  }
+  return error;
+};
+
 export const obtenerRolPorNombre = async (nombreRol) => {
   const resultado = await pool.query(
     "SELECT id FROM roles WHERE nombre = $1",
@@ -22,14 +35,18 @@ export const crearUsuario = async (datosUsuario) => {
     email, password_hash, rol_id
   } = datosUsuario;
 
-  const resultado = await pool.query(
-    `INSERT INTO usuarios
-    (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id)
-    VALUES ($1,$2,$3,$4,$5,$6)
-    RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
-    [nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id]
-  );
-  return resultado.rows[0];
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO usuarios
+      (nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id)
+      VALUES ($1,$2,$3,$4,$5,$6)
+      RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
+      [nombre, apellido_paterno, apellido_materno, email, password_hash, rol_id]
+    );
+    return resultado.rows[0];
+  } catch (error) {
+    throw manejarEmailDuplicado(error);
+  }
 };
 
 export const obtenerUsuarioPorEmailConRol = async (email) => {
@@ -117,32 +134,41 @@ export const crearUsuarioConVerificacion = async (datosUsuario) => {
     nombre, apellido_paterno, apellido_materno,
     email, password_hash, rol_id,
     codigo_verificacion, codigo_verificacion_expira,
+    token_verificacion, token_verificacion_expira,
     debe_cambiar_password = false,
   } = datosUsuario;
 
-  const resultado = await pool.query(
-    `INSERT INTO usuarios
-     (nombre, apellido_paterno, apellido_materno,
-      email, password_hash, rol_id, email_verificado,
-      codigo_verificacion, codigo_verificacion_expira, debe_cambiar_password)
-     VALUES ($1,$2,$3,$4,$5,$6,FALSE,$7,$8,$9)
-     RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
-    [
-      nombre, apellido_paterno, apellido_materno,
-      email, password_hash, rol_id,
-      codigo_verificacion, codigo_verificacion_expira, debe_cambiar_password,
-    ]
-  );
-  return resultado.rows[0];
+  try {
+    const resultado = await pool.query(
+      `INSERT INTO usuarios
+       (nombre, apellido_paterno, apellido_materno,
+        email, password_hash, rol_id, email_verificado,
+        codigo_verificacion, codigo_verificacion_expira,
+        token_verificacion, token_verificacion_expira, debe_cambiar_password)
+       VALUES ($1,$2,$3,$4,$5,$6,FALSE,$7,$8,$9,$10,$11)
+       RETURNING id, nombre, apellido_paterno, apellido_materno, email`,
+      [
+        nombre, apellido_paterno, apellido_materno,
+        email, password_hash, rol_id,
+        codigo_verificacion, codigo_verificacion_expira,
+        token_verificacion, token_verificacion_expira, debe_cambiar_password,
+      ]
+    );
+    return resultado.rows[0];
+  } catch (error) {
+    throw manejarEmailDuplicado(error);
+  }
 };
 
-// Verifica OTP (hash del codigo), marca email como verificado y limpia el codigo
+// Verifica OTP (hash del codigo), marca email como verificado y limpia todo
 export const verificarCodigoOTP = async (email, codigoHash) => {
   const res = await pool.query(
     `UPDATE usuarios
      SET email_verificado = TRUE,
          codigo_verificacion = NULL,
-         codigo_verificacion_expira = NULL
+         codigo_verificacion_expira = NULL,
+         token_verificacion = NULL,
+         token_verificacion_expira = NULL
      WHERE email = $1
        AND codigo_verificacion = $2
        AND codigo_verificacion_expira > NOW()
@@ -153,27 +179,31 @@ export const verificarCodigoOTP = async (email, codigoHash) => {
   return res.rows[0];
 };
 
-// Mantiene compatibilidad con el flujo de token de link (por si acaso)
+// Mantiene compatibilidad con el flujo de token de link y limpia todo
 export const verificarEmailUsuario = async (token) => {
   const res = await pool.query(
     `UPDATE usuarios
      SET email_verificado = TRUE,
          token_verificacion = NULL,
-         token_verificacion_expira = NULL
+         token_verificacion_expira = NULL,
+         codigo_verificacion = NULL,
+         codigo_verificacion_expira = NULL
      WHERE token_verificacion = $1
        AND token_verificacion_expira > NOW()
+       AND email_verificado = FALSE
      RETURNING id, nombre, email`,
     [token]
   );
   return res.rows[0];
 };
 
-export const guardarCodigoVerificacion = async (usuarioId, codigoHash, expira) => {
+export const guardarCodigoVerificacion = async (usuarioId, codigoHash, expira, tokenVerificacion, expiraToken) => {
   await pool.query(
     `UPDATE usuarios
-     SET codigo_verificacion = $1, codigo_verificacion_expira = $2
-     WHERE id = $3`,
-    [codigoHash, expira, usuarioId]
+     SET codigo_verificacion = $1, codigo_verificacion_expira = $2,
+         token_verificacion = $3, token_verificacion_expira = $4
+     WHERE id = $5`,
+    [codigoHash, expira, tokenVerificacion, expiraToken, usuarioId]
   );
 };
 
@@ -208,19 +238,18 @@ export const desbloquearUsuario = async (usuarioId) => {
 };
 
 // Registra un login exitoso en el log
+// Registra un login exitoso en el log (no-op para evitar romper tests, ya que se audita directamente en log_seguridad)
 export const registrarLoginExitoso = async (usuarioId) => {
-  await pool.query(
-    `INSERT INTO login_log (usuario_id) VALUES ($1)`,
-    [usuarioId]
-  );
+  // No-op
 };
 
-// Cuenta logins exitosos en los ultimos N minutos
+// Cuenta logins exitosos en los ultimos N minutos desde log_seguridad
 export const contarLoginsRecientes = async (usuarioId, ventanaMinutos = 15) => {
   const res = await pool.query(
-    `SELECT COUNT(*) AS total FROM login_log
+    `SELECT COUNT(*) AS total FROM public.log_seguridad
      WHERE usuario_id = $1
-       AND created_at > NOW() - ($2 || ' minutes')::INTERVAL`,
+       AND evento = 'LOGIN_EXITOSO'
+       AND fecha > NOW() - ($2 || ' minutes')::INTERVAL`,
     [usuarioId, ventanaMinutos]
   );
   return parseInt(res.rows[0].total, 10);

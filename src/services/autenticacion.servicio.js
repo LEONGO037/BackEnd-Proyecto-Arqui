@@ -19,6 +19,7 @@ import {
   registrarLoginExitoso,
   contarLoginsRecientes,
   guardarCodigoVerificacion,
+  verificarEmailUsuario,
 } from "../models/usuario.modelo.js";
 import {
   validarCredencialesLogin,
@@ -48,6 +49,8 @@ const firmarToken = (usuario, permisos) =>
     {
       id: usuario.id,
       nombre: usuario.nombre,
+      apellido_paterno: usuario.apellido_paterno || null,
+      apellido_materno: usuario.apellido_materno || null,
       email: usuario.email,
       rol: usuario.rol_nombre || usuario.rol,
       rol_id: usuario.rol_id,
@@ -109,6 +112,8 @@ export const iniciarSesion = async (email, password) => {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
+        apellido_paterno: usuario.apellido_paterno,
+        apellido_materno: usuario.apellido_materno,
         email: usuario.email,
         rol: usuario.rol_nombre,
         rol_id: usuario.rol_id,
@@ -142,6 +147,8 @@ export const iniciarSesion = async (email, password) => {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
+        apellido_paterno: usuario.apellido_paterno,
+        apellido_materno: usuario.apellido_materno,
         email: usuario.email,
         rol: usuario.rol_nombre,
         rol_id: usuario.rol_id,
@@ -183,8 +190,10 @@ export const registrarEstudiante = async (datos) => {
   const passwordEncriptado = await bcrypt.hash(password, SALT_ROUNDS);
 
   const codigo = generarCodigo6();
+  const tokenVerificacion = crypto.randomBytes(32).toString("hex");
   const codigoHash = hashCodigo(codigo);
   const expira = new Date(Date.now() + 15 * 60 * 1000); // 15 min
+  const expiraToken = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 horas
 
   const nuevoUsuario = await crearUsuarioConVerificacion({
     nombre,
@@ -195,12 +204,17 @@ export const registrarEstudiante = async (datos) => {
     rol_id: rol.id,
     codigo_verificacion: codigoHash,
     codigo_verificacion_expira: expira,
+    token_verificacion: tokenVerificacion,
+    token_verificacion_expira: expiraToken,
   });
+
+  const urlFront = process.env.FRONTEND_URL || "http://localhost:5173";
+  const verificationUrl = `${urlFront}/verificar-email?token=${tokenVerificacion}&email=${encodeURIComponent(email)}`;
 
   await enviarEmail({
     to: email,
     subject: "Verifica tu correo — College X Nexus",
-    html: emailVerificacionCodigo({ nombre, codigo }),
+    html: emailVerificacionCodigo({ nombre, codigo, verificationUrl }),
   });
 
   return {
@@ -216,7 +230,24 @@ export const verificarCodigoEmail = async (email, codigo) => {
   if (!email || !codigo) throw new Error("Correo y código son requeridos");
   const codigoHash = hashCodigo(String(codigo).trim());
   const usuario = await verificarCodigoOTP(email, codigoHash);
-  if (!usuario) throw new Error("Código inválido o expirado");
+  if (usuario) {
+    return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
+  }
+  // El UPDATE no matcheó. Distinguir entre "ya verificado" (caso común cuando
+  // el cliente de correo siguió el link automáticamente) y "código inválido".
+  const existente = await obtenerUsuarioPorEmail(email);
+  if (existente?.email_verificado) {
+    return { mensaje: "Tu cuenta ya está verificada. Ya puedes iniciar sesión.", yaVerificado: true };
+  }
+  throw new Error("Código inválido o expirado");
+};
+
+// ─── VERIFICAR TOKEN LINK ────────────────────────────────────────────────────
+
+export const verificarTokenEmail = async (token) => {
+  if (!token) throw new Error("El token es requerido");
+  const usuario = await verificarEmailUsuario(token);
+  if (!usuario) throw new Error("El enlace de verificación es inválido o ha expirado");
   return { mensaje: "Correo verificado correctamente. Ya puedes iniciar sesión." };
 };
 
@@ -232,15 +263,20 @@ export const reenviarCodigoVerificacion = async (email) => {
   }
 
   const codigo = generarCodigo6();
+  const tokenVerificacion = crypto.randomBytes(32).toString("hex");
   const codigoHash = hashCodigo(codigo);
   const expira = new Date(Date.now() + 15 * 60 * 1000);
+  const expiraToken = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  await guardarCodigoVerificacion(usuario.id, codigoHash, expira);
+  await guardarCodigoVerificacion(usuario.id, codigoHash, expira, tokenVerificacion, expiraToken);
+
+  const urlFront = process.env.FRONTEND_URL || "http://localhost:5173";
+  const verificationUrl = `${urlFront}/verificar-email?token=${tokenVerificacion}&email=${encodeURIComponent(email)}`;
 
   enviarEmail({
     to: email,
     subject: "Verifica tu correo — College X Nexus",
-    html: emailVerificacionCodigo({ nombre: usuario.nombre, codigo }),
+    html: emailVerificacionCodigo({ nombre: usuario.nombre, codigo, verificationUrl }),
   }).catch(() => {});
 
   return { mensaje: GENERIC_MSG };
@@ -276,7 +312,13 @@ export const cambiarPassword = async (usuarioId, passwordActual, nuevaPassword) 
   // Emitir nuevo JWT sin el flag debe_cambiar_password
   const permisos = await getRolePermissions(usuarioActualizado.rol_id);
   const token = firmarToken(
-    { ...usuarioActualizado, rol_nombre: usuario.rol_nombre, debe_cambiar_password: false },
+    {
+      ...usuarioActualizado,
+      apellido_paterno: usuario.apellido_paterno,
+      apellido_materno: usuario.apellido_materno,
+      rol_nombre: usuario.rol_nombre,
+      debe_cambiar_password: false,
+    },
     permisos
   );
 
@@ -284,6 +326,8 @@ export const cambiarPassword = async (usuarioId, passwordActual, nuevaPassword) 
     usuario: {
       id: usuarioActualizado.id,
       nombre: usuarioActualizado.nombre,
+      apellido_paterno: usuario.apellido_paterno,
+      apellido_materno: usuario.apellido_materno,
       email: usuarioActualizado.email,
       rol: usuario.rol_nombre,
       rol_id: usuarioActualizado.rol_id,
