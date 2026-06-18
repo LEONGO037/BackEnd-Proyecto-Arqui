@@ -25,3 +25,13 @@ export const validacionNuevaPassword = [
     check("codigo").trim().notEmpty().withMessage("El código es requerido"),
     check("nuevoPassword").isLength({ min: 8 }).withMessage("La nueva contraseña debe tener al menos 8 caracteres")
 ];
+
+export const validacionCambiarPassword = [
+    check("password_actual").notEmpty().withMessage("La contraseña actual es requerida"),
+    check("nueva_password").isLength({ min: 12 }).withMessage("La nueva contraseña debe tener al menos 12 caracteres")
+];
+
+export const validacionResetPassword = [
+    check("token").notEmpty().withMessage("El token es requerido"),
+    check("nueva_password").isLength({ min: 12 }).withMessage("La nueva contraseña debe tener al menos 12 caracteres")
+];

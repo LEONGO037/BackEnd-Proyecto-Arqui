@@ -20,7 +20,8 @@ import {
   validacionRegistro,
   validacionLogin,
   validacionReset,
-  validacionNuevaPassword
+  validacionCambiarPassword,
+  validacionResetPassword
 } from "../middlewares/validaciones.auth.js";
 
 const router = express.Router();
@@ -57,10 +58,10 @@ router.post("/login", loginLimiter, validacionLogin, validarCampos, exigirCaptch
 router.post("/verificar-codigo", verificarCodigo);
 router.get("/verificar-token", verificarTokenLink);
 router.post("/reenviar-codigo", reenviarCodigo);
-router.put("/cambiar-password", verificarToken, validacionNuevaPassword, validarCampos, cambiarPassword);
+router.put("/cambiar-password", verificarToken, validacionCambiarPassword, validarCampos, cambiarPassword);
 router.post("/solicitar-reset", validacionReset, validarCampos, exigirCaptcha("reset"), solicitarReset);
 router.post("/verificar-codigo-reset", verificarCodigoReset);
-router.post("/reset-password", validacionNuevaPassword, validarCampos, resetearPassword);
+router.post("/reset-password", validacionResetPassword, validarCampos, resetearPassword);
 router.get("/perfil", verificarToken, perfil);
 
 export default router;

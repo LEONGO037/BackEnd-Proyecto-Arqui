@@ -1,8 +1,8 @@
+import nodemailer from 'nodemailer';
 import { logger } from './logger.service.js';
 
-// Brevo (ex-Sendinblue) v3 API vía fetch nativo. Sin dependencias.
-// HTTPS, sin SMTP → funciona en Render sin issues.
 const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
+const esProduccion = process.env.NODE_ENV === 'production';
 
 // Parsea "Nombre <email@x.com>" o "email@x.com" en { name, email }
 const parseFrom = () => {
@@ -12,7 +12,7 @@ const parseFrom = () => {
   return { name: 'College X Nexus', email: raw.trim() };
 };
 
-// Convierte un attachment de Nodemailer { filename, content } al formato Brevo.
+// Convierte un attachment { filename, content } al formato Brevo.
 const toBrevoAttachment = (a) => {
   let contentBase64;
   if (Buffer.isBuffer(a.content)) contentBase64 = a.content.toString('base64');
@@ -21,15 +21,59 @@ const toBrevoAttachment = (a) => {
   return { name: a.filename, content: contentBase64 };
 };
 
-/**
- * Envía un correo electrónico vía Brevo HTTP API.
- * @param {Object} options
- * @param {string|string[]} options.to
- * @param {string} options.subject
- * @param {string} options.html
- * @param {Array} [options.attachments]
- */
-export const enviarEmail = async ({ to, subject, html, attachments }) => {
+const tieneSmtpReal = process.env.SMTP_HOST &&
+  process.env.SMTP_HOST !== 'localhost' &&
+  process.env.SMTP_HOST !== '127.0.0.1';
+
+const enviarEmailNodemailer = async ({ to, subject, html, attachments }) => {
+  const destino = Array.isArray(to) ? to.join(', ') : to;
+
+  if (!tieneSmtpReal) {
+    // Sin SMTP configurado: imprime el correo en consola para desarrollo
+    logger.info(`\n${'─'.repeat(60)}\n[DEV EMAIL] Para: ${destino}\nAsunto: ${subject}\n${'─'.repeat(60)}\n${html.replace(/<[^>]+>/g, '').trim().slice(0, 600)}\n${'─'.repeat(60)}`);
+    return { messageId: 'dev-console', destino };
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: false,
+    auth: process.env.SMTP_USER ? {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    } : undefined,
+  });
+
+  const sender = parseFrom();
+  const from = sender.email
+    ? `"${sender.name}" <${sender.email}>`
+    : process.env.SMTP_USER || 'noreply@college.local';
+
+  const mailOptions = {
+    from,
+    to: destino,
+    subject,
+    html,
+  };
+
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    mailOptions.attachments = attachments.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+    }));
+  }
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    logger.info(`[Nodemailer] Email enviado a ${destino} — ${info.messageId}`);
+    return info;
+  } catch (error) {
+    logger.error('[Nodemailer] Error al enviar email', error.message);
+    throw error;
+  }
+};
+
+const enviarEmailBrevo = async ({ to, subject, html, attachments }) => {
   const apiKey = process.env.BREVO_API_KEY;
   if (!apiKey) {
     logger.warn('Configuración de correo incompleta (BREVO_API_KEY faltante).');
@@ -43,13 +87,7 @@ export const enviarEmail = async ({ to, subject, html, attachments }) => {
   }
 
   const recipients = (Array.isArray(to) ? to : [to]).map((e) => ({ email: e }));
-
-  const payload = {
-    sender,
-    to: recipients,
-    subject,
-    htmlContent: html,
-  };
+  const payload = { sender, to: recipients, subject, htmlContent: html };
 
   if (Array.isArray(attachments) && attachments.length > 0) {
     payload.attachment = attachments.map(toBrevoAttachment);
@@ -78,6 +116,11 @@ export const enviarEmail = async ({ to, subject, html, attachments }) => {
     throw error;
   }
 };
+
+/**
+ * Envía un correo. En desarrollo usa Nodemailer (SMTP local), en producción usa Brevo.
+ */
+export const enviarEmail = esProduccion ? enviarEmailBrevo : enviarEmailNodemailer;
 
 // --- Templates ---
 
