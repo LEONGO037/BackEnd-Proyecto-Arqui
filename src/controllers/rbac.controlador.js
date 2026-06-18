@@ -50,16 +50,7 @@ export const deleteRol = async (req, res, next) => {
   try {
     await deleteRole(req.params.id);
 
-    // Eliminar un rol es una operación crítica de seguridad → WARN
-    logAplicacion({
-      nivel: "WARN",
-      modulo: "seguridad",
-      evento: "ROL_ELIMINADO",
-      mensaje: `Rol ID ${req.params.id} eliminado`,
-      usuario_id: req.usuario?.id,
-      detalle: { rol_id: req.params.id },
-      req,
-    }).catch(() => {});
+    // SE ELIMINÓ EL LOG_APLICACION POR PETICIÓN DEL USUARIO
 
     res.json({ mensaje: "Rol eliminado" });
   } catch (err) {
@@ -90,16 +81,7 @@ export const postAsignarPermiso = async (req, res, next) => {
     const { permisoId } = req.body;
     await assignPermisoToRol(req.params.id, permisoId);
 
-    // Cambiar los permisos de un rol es crítico de seguridad → WARN
-    logAplicacion({
-      nivel: "WARN",
-      modulo: "seguridad",
-      evento: "PERMISO_ASIGNADO",
-      mensaje: `Permiso ${permisoId} asignado al rol ${req.params.id}`,
-      usuario_id: req.usuario?.id,
-      detalle: { rol_id: req.params.id, permiso_id: permisoId },
-      req,
-    }).catch(() => {});
+    // SE ELIMINÓ EL LOG_APLICACION POR PETICIÓN DEL USUARIO
 
     res.json({ mensaje: "Permiso asignado" });
   } catch (err) { next(err); }
@@ -109,16 +91,7 @@ export const deletePermisoDeRol = async (req, res, next) => {
   try {
     await removePermisoFromRol(req.params.id, req.params.pid);
 
-    // Revocar un permiso de un rol es crítico de seguridad → WARN
-    logAplicacion({
-      nivel: "WARN",
-      modulo: "seguridad",
-      evento: "PERMISO_REVOCADO",
-      mensaje: `Permiso ${req.params.pid} revocado del rol ${req.params.id}`,
-      usuario_id: req.usuario?.id,
-      detalle: { rol_id: req.params.id, permiso_id: req.params.pid },
-      req,
-    }).catch(() => {});
+    // SE ELIMINÓ EL LOG_APLICACION POR PETICIÓN DEL USUARIO
 
     res.json({ mensaje: "Permiso removido" });
   } catch (err) { next(err); }
