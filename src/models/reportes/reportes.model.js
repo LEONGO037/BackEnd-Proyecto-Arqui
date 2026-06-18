@@ -270,11 +270,6 @@ export const obtenerLogsAplicacion = async ({
     idx++;
   }
 
-  if (nivel) {
-    condiciones.push(`la.nivel = $${idx}`);
-    valores.push(nivel.toUpperCase());
-    idx++;
-  }
 
   if (evento) {
     condiciones.push(`la.evento ILIKE $${idx}`);
@@ -303,7 +298,6 @@ export const obtenerLogsAplicacion = async ({
     `SELECT
       la.id,
       la.fecha,
-      la.nivel,
       la.modulo,
       la.evento,
       la.mensaje,

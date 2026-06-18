@@ -84,7 +84,6 @@ const normalizarIP = (ipRaw) => {
  * @param {Object} [params.detalle]
  */
 export const logAplicacion = async ({
-    nivel = "INFO",
     modulo,
     evento,
     mensaje = null,
@@ -98,20 +97,20 @@ export const logAplicacion = async ({
 
     const detalleSanitizado = sanitizar(detalle);
 
-    consolaSeguro(nivel, `[${modulo}/${evento}] ${mensaje || ""}`, detalleSanitizado);
+    consolaSeguro("INFO", `[${modulo}/${evento}] ${mensaje || ""}`, detalleSanitizado);
 
     try {
         await pool.query(
             `INSERT INTO public.log_aplicacion
-                (nivel, modulo, evento, mensaje, usuario_id, detalle, ip, user_agent)
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-            [nivel, modulo, evento, mensaje, usuario_id, detalleSanitizado, ip, userAgent]
+                (modulo, evento, mensaje, usuario_id, detalle, ip, user_agent)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+            [modulo, evento, mensaje, usuario_id, detalleSanitizado, ip, userAgent]
         );
     } catch (err) {
         escribirFallback({
             tipo: "log_aplicacion",
             fecha: new Date().toISOString(),
-            nivel, modulo, evento, mensaje, usuario_id,
+            modulo, evento, mensaje, usuario_id,
             detalle: detalleSanitizado,
             ip, user_agent: userAgent,
             error_bd: err.message,

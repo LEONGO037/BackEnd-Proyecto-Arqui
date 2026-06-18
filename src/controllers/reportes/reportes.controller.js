@@ -13,7 +13,6 @@ import {
   generarPDFPagos,
 } from "../../services/reportes/reportes.pdf.service.js";
 import { registrarAuditoriaSegura } from "../../services/auditoria.service.js";
-import { logger } from "../../services/logger.service.js";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -63,7 +62,7 @@ export const getResumenReporte = async (req, res) => {
       inscripciones_por_curso: porCurso,
     });
   } catch (err) {
-    logger.error("Error getResumenReporte:", err.message);
+    console.error("Error getResumenReporte:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -79,7 +78,7 @@ export const getReporteInscripciones = async (req, res) => {
 
     res.json({ total: datos.length, datos });
   } catch (err) {
-    logger.error("Error getReporteInscripciones:", err.message);
+    console.error("Error getReporteInscripciones:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -95,7 +94,7 @@ export const getReportePagos = async (req, res) => {
 
     res.json({ total: datos.length, datos });
   } catch (err) {
-    logger.error("Error getReportePagos:", err.message);
+    console.error("Error getReportePagos:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -124,7 +123,7 @@ export const getReporteAuditoria = async (req, res) => {
       },
     });
   } catch (err) {
-    logger.error("Error getReporteAuditoria:", err.message);
+    console.error("Error getReporteAuditoria:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -176,8 +175,8 @@ export const getLogsAplicacion = async (req, res) => {
       datos,
     });
   } catch (err) {
-    logger.error("Error getLogsAplicacion:", err.message);
-    res.status(500).json({ error: "Error interno del servidor" });
+    console.error("Error getLogsAplicacion:", err);
+    res.status(500).json({ error: "Error interno: " + err.message, stack: err.stack });
   }
 };
 
@@ -195,7 +194,7 @@ export const getLogsSeguridad = async (req, res) => {
       datos,
     });
   } catch (err) {
-    logger.error("Error getLogsSeguridad:", err.message);
+    console.error("Error getLogsSeguridad:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -225,7 +224,7 @@ export const descargarPDFInscripciones = async (req, res) => {
 
     res.send(pdfBuffer);
   } catch (err) {
-    logger.error("Error descargarPDFInscripciones:", err.message);
+    console.error("Error descargarPDFInscripciones:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
@@ -253,7 +252,7 @@ export const descargarPDFPagos = async (req, res) => {
 
     res.send(pdfBuffer);
   } catch (err) {
-    logger.error("Error descargarPDFPagos:", err.message);
+    console.error("Error descargarPDFPagos:", err.message);
     res.status(500).json({ error: "Error interno del servidor" });
   }
 };
